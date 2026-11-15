@@ -350,6 +350,35 @@ fn urlencode(s: &str) -> String {
     url::form_urlencoded::byte_serialize(s.as_bytes()).collect::<String>().replace('+', "%20")
 }
 
+/// Resumo estrutural de uma resposta: para cada campo, o tipo e o tamanho (sem valores).
+fn response_shape(v: &Value) -> Value {
+    let Some(obj) = v.as_object() else { return json!(format!("{}", type_name(v))) };
+    Value::Object(
+        obj.iter()
+            .filter(|(k, _)| k.as_str() != "tabs")
+            .map(|(k, x)| {
+                let desc = match x {
+                    Value::Array(a) => json!(format!("array[{}]", a.len())),
+                    Value::Object(o) => json!(format!("object{{{}}}", o.keys().take(8).cloned().collect::<Vec<_>>().join(","))),
+                    other => json!(type_name(other)),
+                };
+                (k.clone(), desc)
+            })
+            .collect(),
+    )
+}
+
+fn type_name(v: &Value) -> &'static str {
+    match v {
+        Value::Null => "null",
+        Value::Bool(_) => "bool",
+        Value::Number(_) => "number",
+        Value::String(_) => "string",
+        Value::Array(_) => "array",
+        Value::Object(_) => "object",
+    }
+}
+
 fn items_of(v: Option<&Value>) -> Vec<Value> {
     v.and_then(|x| x.get("items")).and_then(Value::as_array).cloned().unwrap_or_default()
 }
@@ -388,7 +417,12 @@ async fn stash_items(app: AppHandle, state: State<'_, AppState>, league: String,
             let creds = state.session.lock().unwrap().clone().ok_or("Sign in first.")?;
             let ua = state.ninja_ua();
             let body = ggg::legacy_request(&state.ggg, &state.limiter, &app, &ua, &creds, &league, tab.index, false).await.map_err(|e| state.fail(e))?;
-            Ok(body.get("items").and_then(Value::as_array).cloned().unwrap_or_default())
+            let items = body.get("items").and_then(Value::as_array).cloned().unwrap_or_default();
+            if items.is_empty() {
+                // Diagnóstico: só a forma da resposta (campos e tamanhos), nunca conteúdo nem cookie.
+                state.log("tab-empty", &format!("{} [{}] index {}", tab.name, tab.kind, tab.index), Some(&response_shape(&body)));
+            }
+            Ok(items)
         }
         None => Err("Sign in first.".into()),
     }
