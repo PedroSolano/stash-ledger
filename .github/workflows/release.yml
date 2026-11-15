@@ -13,11 +13,12 @@ jobs:
   release:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      # Node 22 fixo: com versões mais novas o upload do electron-builder encerrava antes de terminar.
+      - uses: actions/setup-node@v5
         with:
-          node-version: 'lts/*'
+          node-version: 22
           cache: npm
 
       - run: npm ci
@@ -33,12 +34,26 @@ jobs:
           v="v$(node -p "require('./package.json').version")"
           if [ "$v" != "$GITHUB_REF_NAME" ]; then echo "Tag $GITHUB_REF_NAME diferente da versão $v"; exit 1; fi
 
-      - name: Compila e publica no GitHub Releases
+      - name: Compila o instalador
         run: |
           npx electron-vite build
-          npx electron-builder --win --publish always
+          npx electron-builder --win --publish never
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Opcional: quando tiver um app OAuth da GGG, crie estas variáveis em Settings → Variables.
           MAIN_VITE_POE_CLIENT_ID: ${{ vars.POE_CLIENT_ID }}
           MAIN_VITE_POE_CONTACT: ${{ vars.POE_CONTACT }}
+
+      # O auto-update precisa dos três arquivos: instalador, blockmap e latest.yml (com o SHA-512).
+      - name: Publica no GitHub Releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          FILES="dist/StashLedger-Setup-$V.exe dist/StashLedger-Setup-$V.exe.blockmap dist/latest.yml"
+          for f in $FILES; do test -f "$f" || { echo "Faltando: $f"; exit 1; }; done
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" $FILES --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" $FILES --title "Stash Ledger $V" --generate-notes
+          fi
