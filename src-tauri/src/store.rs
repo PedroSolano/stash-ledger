@@ -90,24 +90,64 @@ pub fn delete(dir: &Path, name: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// A versão Electron (até 0.2.x) usava a mesma pasta de dados: remove o que era dela
-/// (caches do Chromium, cache de preços antigo e segredos que o Tauri não consegue ler).
+const LEGACY_DIRS: [&str; 15] = [
+    "Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache", "Local Storage", "Session Storage",
+    "blob_storage", "Network", "Shared Dictionary", "ShaderCache", "GrShaderCache", "GPUPersistentCache",
+    "Extension State", "ninja-cache",
+];
+const LEGACY_FILES: [&str; 9] = [
+    "Local State", "Preferences", "DIPS", "DIPS-journal", "declarative_performance_observer.db",
+    "declarative_performance_observer.db-journal", "auth.bin", "session.bin", ".updaterId",
+];
+
+/// Remove uma pasta inteira. No Windows o remove_dir_all às vezes falha nos caches do Chromium;
+/// nesse caso apaga arquivo por arquivo.
+fn remove_tree(path: &Path) -> std::io::Result<()> {
+    if fs::remove_dir_all(path).is_ok() || !path.exists() {
+        return Ok(());
+    }
+    for entry in fs::read_dir(path)? {
+        let p = entry?.path();
+        if p.is_dir() {
+            remove_tree(&p)?;
+        } else {
+            if let Ok(meta) = fs::metadata(&p) {
+                let mut perm = meta.permissions();
+                if perm.readonly() {
+                    #[allow(clippy::permissions_set_readonly_false)]
+                    perm.set_readonly(false);
+                    let _ = fs::set_permissions(&p, perm);
+                }
+            }
+            fs::remove_file(&p)?;
+        }
+    }
+    fs::remove_dir(path)
+}
+
+/// A versão Electron (até 0.2.x) usava a mesma pasta de dados: remove o que era dela (caches do
+/// Chromium, cache de preços antigo e segredos que o Tauri não consegue ler). O Tauri não cria
+/// nenhum desses nomes ali (o WebView2 usa outra pasta), então é seguro checar a cada início.
 pub fn cleanup_legacy(dir: &Path) {
-    if !dir.join("Local State").exists() {
-        return;
+    let mut failed = Vec::new();
+    for d in LEGACY_DIRS {
+        let p = dir.join(d);
+        if p.exists() {
+            if let Err(e) = remove_tree(&p) {
+                failed.push(format!("{d}: {e}"));
+            }
+        }
     }
-    for d in [
-        "Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache", "Local Storage", "Session Storage",
-        "blob_storage", "Network", "Shared Dictionary", "ShaderCache", "GrShaderCache", "GPUPersistentCache",
-        "Extension State", "ninja-cache",
-    ] {
-        let _ = fs::remove_dir_all(dir.join(d));
+    for f in LEGACY_FILES {
+        let p = dir.join(f);
+        if p.exists() {
+            if let Err(e) = fs::remove_file(&p) {
+                failed.push(format!("{f}: {e}"));
+            }
+        }
     }
-    for f in [
-        "Local State", "Preferences", "DIPS", "DIPS-journal", "declarative_performance_observer.db",
-        "declarative_performance_observer.db-journal", "auth.bin", "session.bin", ".updaterId",
-    ] {
-        let _ = fs::remove_file(dir.join(f));
+    if !failed.is_empty() {
+        crate::logfile::append(dir, "cleanup", "Could not remove some files from the old version", Some(&serde_json::json!(failed)));
     }
 }
 
@@ -138,6 +178,22 @@ mod tests {
         assert_eq!(read_json(&dir, "snapshots/big").unwrap().unwrap(), big);
         delete(&dir, "snapshots/big").unwrap();
         assert!(read_json(&dir, "snapshots/big").unwrap().is_none());
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn cleans_electron_leftovers_but_keeps_user_data() {
+        let dir = std::env::temp_dir().join(format!("sl-legacy-{}", std::process::id()));
+        fs::create_dir_all(dir.join("GPUCache/sub")).unwrap();
+        fs::write(dir.join("GPUCache/sub/data_0"), b"x").unwrap();
+        fs::write(dir.join("Local State"), b"{}").unwrap();
+        write_json(&dir, "settings", &json!({"league": "Covens"})).unwrap();
+        write_json(&dir, "snapshots/covens-history", &json!([1])).unwrap();
+        cleanup_legacy(&dir);
+        assert!(!dir.join("GPUCache").exists());
+        assert!(!dir.join("Local State").exists());
+        assert!(read_json(&dir, "settings").unwrap().is_some());
+        assert!(read_json(&dir, "snapshots/covens-history").unwrap().is_some());
         let _ = fs::remove_dir_all(dir);
     }
 }
