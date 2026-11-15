@@ -142,6 +142,8 @@ export interface Settings {
   priceBaseTypes: boolean
   /** Esconde itens abaixo desse valor (em chaos) na tabela. */
   hideBelowChaos: number
+  /** De quanto em quanto tempo (min) o cache local de preços é atualizado a partir do poe.ninja. */
+  priceRefreshMinutes: number
 }
 
 export interface AuthStatus {
@@ -185,7 +187,7 @@ export type UpdateState =
   | { status: 'ready'; version: string }
   | { status: 'error'; message: string }
 
-/** API exposta ao renderer pelo preload (window.api). */
+/** API usada pela interface (window.api), montada em src/renderer/src/lib/api.ts. */
 export interface StashLedgerApi {
   getState(): Promise<AppState>
   login(): Promise<AppState>

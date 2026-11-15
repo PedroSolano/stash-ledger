@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { PoeItem } from '../src/shared/types'
-import { cleanText, normalizeItem } from '../src/main/pricing/normalize'
-import { PriceIndex } from '../src/main/pricing/priceIndex'
-import { DEFAULT_PRICING, valueItems } from '../src/main/pricing/priceItem'
+import { cleanText, normalizeItem } from '../src/core/pricing/normalize'
+import { PriceIndex } from '../src/core/pricing/priceIndex'
+import { DEFAULT_PRICING, valueItems } from '../src/core/pricing/priceItem'
 
 const idx = PriceIndex.build({
   exchange: {

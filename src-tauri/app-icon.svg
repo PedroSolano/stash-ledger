@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6dfa4"/>
+      <stop offset="0.5" stop-color="#d1a557"/>
+      <stop offset="1" stop-color="#8a6128"/>
+    </linearGradient>
+    <radialGradient id="bg" cx="0.5" cy="0.4" r="0.7">
+      <stop offset="0" stop-color="#2b2014"/>
+      <stop offset="1" stop-color="#0c0906"/>
+    </radialGradient>
+    <linearGradient id="gem" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e9c77e"/>
+      <stop offset="1" stop-color="#6e4a1c"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="960" height="960" rx="180" fill="url(#bg)"/>
+  <rect x="48" y="48" width="928" height="928" rx="166" fill="none" stroke="#5a4426" stroke-width="8"/>
+  <polygon points="512,150 874,512 512,874 150,512" fill="none" stroke="url(#gold)" stroke-width="44"/>
+  <polygon points="512,268 756,512 512,756 268,512" fill="#160f08" stroke="#8a6128" stroke-width="10"/>
+  <polygon points="512,350 674,512 512,674 350,512" fill="url(#gem)"/>
+  <polygon points="512,350 674,512 512,512" fill="#f6dfa4" opacity="0.35"/>
+</svg>

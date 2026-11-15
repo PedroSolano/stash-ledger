@@ -50,7 +50,8 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
         autoSnapshotMinutes: s.autoSnapshotMinutes,
         includeLowConfidence: s.includeLowConfidence,
         priceBaseTypes: s.priceBaseTypes,
-        hideBelowChaos: s.hideBelowChaos
+        hideBelowChaos: s.hideBelowChaos,
+        priceRefreshMinutes: s.priceRefreshMinutes
       })
       onClose()
     } catch (e) {
@@ -115,6 +116,24 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
           </div>
 
           <div className="section-title">Pricing</div>
+          <div className="field">
+            <label htmlFor="refresh">Update prices</label>
+            <select
+              id="refresh"
+              className="select"
+              value={s.priceRefreshMinutes}
+              onChange={(e) => set('priceRefreshMinutes', Number(e.target.value))}
+            >
+              <option value={15}>Every 15 minutes</option>
+              <option value={30}>Every 30 minutes</option>
+              <option value={60}>Every hour</option>
+              <option value={120}>Every 2 hours</option>
+            </select>
+            <span className="hint">
+              Prices are kept in a small compressed cache on your computer and only re-downloaded when poe.ninja has
+              something new. poe.ninja itself updates about every 15 minutes.
+            </span>
+          </div>
           <label className="check">
             <input type="checkbox" checked={s.priceBaseTypes} onChange={(e) => set('priceBaseTypes', e.target.checked)} />
             <span>

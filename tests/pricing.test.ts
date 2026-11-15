@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { PoeItem } from '../src/shared/types'
-import { stripPayload, type ItemLine } from '../src/main/pricing/ninja'
-import { PriceIndex } from '../src/main/pricing/priceIndex'
-import { DEFAULT_PRICING, maxLinks, priceItem, valueItems } from '../src/main/pricing/priceItem'
+import type { CompactPrices, ItemLine } from '../src/core/pricing/ninja'
+import { PriceIndex } from '../src/core/pricing/priceIndex'
+import { DEFAULT_PRICING, maxLinks, priceItem, valueItems } from '../src/core/pricing/priceItem'
 
 const line = (l: Partial<ItemLine> & { name: string; chaosValue: number }): ItemLine => ({ listingCount: 50, ...l })
 
@@ -272,11 +272,39 @@ describe('valueItems', () => {
   })
 })
 
-describe('stripPayload', () => {
-  it('mantém só os campos usados das linhas de item', () => {
-    const out = stripPayload('item', {
-      lines: [{ name: 'X', chaosValue: 5, sparkLine: { data: [1] }, explicitModifiers: [{ text: 'a' }], mutatedModifiers: [{ text: 'Gain 5 Foo' }], links: 0 }]
-    }) as { lines: ItemLine[] }
-    expect(out.lines[0]).toEqual({ name: 'X', chaosValue: 5, mutated: ['Gain 5 Foo'] })
+describe('cache compacto (formato gravado pelo backend Rust)', () => {
+  it('monta o índice a partir das listas posicionais', () => {
+    const compact = {
+      exchange_Currency: { k: 'e', div: 113.8, l: [['Divine Orb', 113.8, '/d.png'], ['Chaos Orb', 1, '/c.png']] },
+      exchange_DivinationCard: { k: 'e', l: [['The Nurse', 202.1, '']] },
+      item_UniqueAccessory: {
+        k: 'i',
+        l: [
+          ['Headhunter', 'Leather Belt', '', 0, 0, 0, 0, 0, 3, 14000, 16, 0],
+          ['Foulborn Headhunter', 'Leather Belt', 'Soul Eater', 0, 0, 0, 0, 0, 3, 25000, 4, ['Gain 10 Soul Eater stacks']]
+        ]
+      },
+      item_SkillGem: { k: 'i', l: [['Arc', '', '20/20', 0, 20, 20, 0, 70, 4, 49, 8, 0]] },
+      currency_Currency: { k: 'c', l: [['Scrying Orb', 3]] }
+    } satisfies CompactPrices
+    const ci = PriceIndex.fromCompact(compact)
+    const base = (p: Partial<PoeItem>): PoeItem => ({ name: '', typeLine: '', baseType: '', icon: '', ilvl: 0, identified: true, ...p })
+    expect(ci.divineChaos).toBe(113.8)
+    expect(priceItem(base({ typeLine: 'The Nurse', frameType: 6 }), ci)?.chaos).toBe(202.1)
+    expect(priceItem(base({ typeLine: 'Scrying Orb', frameType: 5 }), ci)?.chaos).toBe(3)
+    const hh = base({ name: 'Headhunter', typeLine: 'Leather Belt', baseType: 'Leather Belt', frameType: 3 })
+    expect(priceItem(hh, ci)?.chaos).toBe(14000)
+    const foulborn = priceItem({ ...hh, mutatedMods: ['Gain 12 Soul Eater stacks'] }, ci)
+    expect(foulborn?.chaos).toBe(25000)
+    expect(foulborn?.confidence).toBe('low')
+    const arc = base({
+      typeLine: 'Arc',
+      frameType: 4,
+      properties: [
+        { name: 'Level', values: [['20 (Max)', 0]] },
+        { name: 'Quality', values: [['+20%', 1]] }
+      ]
+    })
+    expect(priceItem(arc, ci)?.chaos).toBe(49)
   })
 })

@@ -1,0 +1,42 @@
+[package]
+name = "stash-ledger"
+version = "0.3.0"
+description = "Path of Exile stash valuation with poe.ninja prices"
+edition = "2021"
+publish = false
+
+[lib]
+name = "stash_ledger_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "gzip", "brotli"] }
+tokio = { version = "1", features = ["sync", "time", "net", "io-util", "macros"] }
+futures = "0.3"
+flate2 = "1"
+sha2 = "0.10"
+base64 = "0.22"
+rand = "0.8"
+url = "2"
+keyring = { version = "3", features = ["windows-native", "linux-native"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt", "macros", "net", "time", "io-util", "sync"] }
+
+# Binário pequeno: o objetivo do app é ser leve.
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

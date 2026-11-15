@@ -12,18 +12,23 @@ See what your Path of Exile stash is worth, priced with **every category on poe.
 - **Per-tab breakdown** and a searchable, sortable item table.
 - **Automatic snapshots** every 5 to 60 minutes.
 - **Fits your screen**: the layout adapts to your window size, with a three-column view for ultrawide monitors.
-- **Updates itself**: new versions download and install automatically.
+- **Light**: a few MB to download and install, low memory use, and a price cache of a couple hundred KB.
+- **Updates itself**: new versions download and install automatically, and every update is cryptographically signed.
 
 ## Install
 
-1. Download `StashLedger-Setup-x.y.z.exe` from the [latest release](https://github.com/PedroSolano/stash-ledger/releases/latest).
+1. Download the file ending in **`_x64-setup.exe`** from the [latest release](https://github.com/PedroSolano/stash-ledger/releases/latest).
 2. Run it. It installs for your user only and doesn't ask for admin rights.
 
-The installer isn't digitally signed yet, so Windows SmartScreen may say *"Windows protected your PC"*. Click **More info → Run anyway**. This only happens on the first install.
+Requires Windows 10 or 11. The app uses Microsoft Edge WebView2, which comes with Windows 11; on older systems the installer downloads it automatically.
+
+The installer isn't code-signed yet, so Windows SmartScreen may say *"Windows protected your PC"*. Click **More info → Run anyway**. This only happens on the first install.
+
+**Coming from version 0.2 or older?** Uninstall the old version first (Windows Settings → Apps → Stash Ledger), then install this one. Your history and settings are kept; you only need to sign in again once.
 
 ## Updates
 
-Every time you open the app, it checks for a new version, downloads it in the background and restarts to install it after a short countdown. Click **Later** to postpone; the update will then be installed when you close the app.
+Every time you open the app, it checks for a new version, downloads it in the background and restarts to install it after a short countdown. Click **Later** to postpone; the update will then be installed when you close the app. Updates are only installed if their signature matches the one built into the app.
 
 ## Signing in
 
@@ -39,7 +44,7 @@ Every time you open the app, it checks for a new version, downloads it in the ba
 2. Press **F12**, go to **Application → Cookies → https://www.pathofexile.com** and copy the value of `POESESSID` (32 characters).
 3. In Stash Ledger, click **Sign in with POESESSID**, paste it and enter your account name **including the #1234** (exactly as shown on your profile).
 
-**Keep it safe.** Your POESESSID gives full access to your account on the website, so never share it with anyone. Stash Ledger stores it encrypted on your computer and only ever sends it to pathofexile.com. To invalidate it at any time, sign out of the website (you'll then need to paste a new one in the app).
+**Keep it safe.** Your POESESSID gives full access to your account on the website, so never share it with anyone. Stash Ledger stores it in the Windows Credential Manager (encrypted by Windows) and only ever sends it to pathofexile.com. To invalidate it at any time, sign out of the website (you'll then need to paste a new one in the app).
 
 This mode uses a legacy website endpoint that isn't part of GGG's official API. Tools like this have used it for years, but GGG may change or block it at any time.
 
@@ -56,7 +61,7 @@ Markers in the item table:
 - **low confidence**: fewer than 5 listings on poe.ninja. The item is shown but left out of your total, unless you enable *Include low-confidence prices in totals* in Settings.
 - **No price**: poe.ninja doesn't price that item (most rares, for example).
 
-poe.ninja refreshes its prices about every 15 minutes, and the app caches them for that long. Values are shown in chaos and divines, using poe.ninja's current divine rate.
+Prices come from a small compressed cache on your computer. While the app is open, it refreshes that cache from poe.ninja on a schedule (every 30 minutes by default, adjustable in Settings) and only downloads categories that actually changed. Values are shown in chaos and divines, using poe.ninja's current divine rate.
 
 ## Troubleshooting
 
@@ -67,7 +72,7 @@ poe.ninja refreshes its prices about every 15 minutes, and the app caches them f
 
 ## Privacy
 
-Your snapshots, settings and session stay on your computer (`%APPDATA%\Stash Ledger`). The app only talks to:
+Your snapshots, settings and price cache stay on your computer (`%APPDATA%\Stash Ledger`); your session is kept in the Windows Credential Manager. The app only talks to:
 
 - **pathofexile.com**, to read your stash tabs;
 - **poe.ninja**, to fetch prices;
@@ -78,4 +83,4 @@ There are no analytics and no tracking.
 
 ## Uninstall
 
-Go to **Windows Settings → Apps → Installed apps → Stash Ledger → Uninstall**. To also remove your history and saved session, delete the `%APPDATA%\Stash Ledger` folder.
+Click **Log out** in the app first to remove your saved session, then go to **Windows Settings → Apps → Installed apps → Stash Ledger → Uninstall**. To also remove your history, delete the `%APPDATA%\Stash Ledger` folder.
