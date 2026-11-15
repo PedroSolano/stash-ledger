@@ -1,8 +1,10 @@
 import { app, BrowserWindow, ipcMain, shell, type IpcMainInvokeEvent } from 'electron'
+import { existsSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import type { ProgressEvent, SnapshotDetail, UpdateState } from '../shared/types'
 import { AppController } from './controller'
+import { initLog, logError, logPath } from './log'
 import { Updater } from './updater'
 
 const isDev = !app.isPackaged
@@ -129,12 +131,20 @@ function registerIpc(): void {
   handle('external:open', async (url: string) => {
     if (isAllowedExternal(String(url))) await shell.openExternal(String(url))
   })
+  handle('log:open', () => {
+    const file = logPath()
+    if (file && existsSync(file)) shell.showItemInFolder(file)
+    else if (file) void shell.openPath(dirname(file))
+  })
   handle('update:get', () => updater.get())
   handle('update:check', () => updater.check())
   handle('update:install', () => updater.install())
 }
 
 app.whenReady().then(async () => {
+  initLog(join(app.getPath('userData'), 'stash-ledger.log'))
+  process.on('uncaughtException', (err) => logError('uncaught', err))
+  process.on('unhandledRejection', (err) => logError('unhandled', err))
   controller = new AppController({
     userData: app.getPath('userData'),
     version: app.getVersion(),

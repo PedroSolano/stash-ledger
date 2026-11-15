@@ -99,7 +99,17 @@ export function Dashboard({ latest, history, hideBelow, onHideBelowChange }: Pro
           <div className="value">
             {num(latest.pricedCount)} <span className="sub">/ {num(latest.itemCount)}</span>
           </div>
-          <div className="meta">Preços do poe.ninja {ago(latest.pricesUpdatedAt)}</div>
+          <div className="meta">
+            Preços do poe.ninja {ago(latest.pricesUpdatedAt)}
+            {latest.errorCount ? (
+              <>
+                {' · '}
+                <button className="link" onClick={() => void window.api.openLog()} title="Abrir o log de erros">
+                  {num(latest.errorCount)} com erro
+                </button>
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
 

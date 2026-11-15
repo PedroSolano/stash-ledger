@@ -83,6 +83,16 @@ a {
   color: var(--gold);
 }
 
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--warn);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 code {
   font-family: Consolas, monospace;
   font-size: 0.9em;

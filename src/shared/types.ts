@@ -112,6 +112,8 @@ export interface SnapshotSummary {
   divineChaos: number
   itemCount: number
   pricedCount: number
+  /** Itens que não puderam ser lidos/precificados por erro (detalhes no log). */
+  errorCount?: number
   tabs: TabValue[]
   demo?: boolean
 }
@@ -206,6 +208,8 @@ export interface StashLedgerApi {
   openExternal(url: string): Promise<void>
   onProgress(cb: (ev: ProgressEvent) => void): () => void
   onSnapshot(cb: (snap: SnapshotDetail) => void): () => void
+  /** Mostra o arquivo de log de erros no Explorer. */
+  openLog(): Promise<void>
   getUpdate(): Promise<UpdateState>
   checkUpdate(): Promise<void>
   installUpdate(): Promise<void>

@@ -1,4 +1,5 @@
 import type { Confidence, PoeItem, PricedItem } from '../../shared/types'
+import { normalizeItem } from './normalize'
 import { norm, normMod, type PriceEntry, type PriceIndex } from './priceIndex'
 
 export interface PricingOptions {
@@ -59,7 +60,10 @@ function allTexts(item: PoeItem): string[] {
   }
   if (item.descrText) texts.push(item.descrText)
   if (item.secDescrText) texts.push(item.secDescrText)
-  return texts.flatMap((t) => t.split('\n')).map(norm)
+  return texts
+    .filter((t): t is string => typeof t === 'string')
+    .flatMap((t) => t.split('\n'))
+    .map(norm)
 }
 
 const INFLUENCE_ORDER = ['shaper', 'elder', 'crusader', 'redeemer', 'warlord', 'hunter'] as const
@@ -302,7 +306,7 @@ function priceValdo(item: PoeItem, idx: PriceIndex, opts: PricingOptions): Price
 }
 
 function priceCluster(item: PoeItem, idx: PriceIndex, opts: PricingOptions): PriceMatch | null {
-  const ench = (item.enchantMods ?? []).flatMap((m) => m.split('\n'))
+  const ench = (item.enchantMods ?? []).filter((m) => typeof m === 'string').flatMap((m) => m.split('\n'))
   let passives: string | undefined
   let grant: string | undefined
   for (const m of ench) {
@@ -437,6 +441,7 @@ export interface ValuationResult {
   totalChaos: number
   itemCount: number
   pricedCount: number
+  errorCount: number
 }
 
 function displayName(item: PoeItem): string {
@@ -458,19 +463,31 @@ function flatten(items: PoeItem[]): PoeItem[] {
 export function valueItems(
   tabs: TabItems[],
   idx: PriceIndex,
-  opts: PricingOptions & { includeLowConfidence: boolean }
+  opts: PricingOptions & {
+    includeLowConfidence: boolean
+    /** Chamado quando um item não pôde ser precificado por erro (o snapshot continua). */
+    onItemError?: (err: unknown, item: PoeItem) => void
+  }
 ): ValuationResult {
   const groups = new Map<string, PricedItem>()
   const byTab = new Map<string, { chaos: number; itemCount: number }>()
   let totalChaos = 0
   let itemCount = 0
   let pricedCount = 0
+  let errorCount = 0
 
   for (const tab of tabs) {
     const tabAgg = byTab.get(tab.tabId) ?? { chaos: 0, itemCount: 0 }
-    for (const item of flatten(tab.items)) {
+    const items = Array.isArray(tab.items) ? tab.items.map((raw) => normalizeItem(raw)) : []
+    for (const item of flatten(items)) {
       const qty = Math.max(1, item.stackSize ?? 1)
-      const match = priceItem(item, idx, opts)
+      let match: PriceMatch | null = null
+      try {
+        match = priceItem(item, idx, opts)
+      } catch (err) {
+        errorCount++
+        opts.onItemError?.(err, item)
+      }
       const counts = !!match && (opts.includeLowConfidence || match.confidence === 'high')
       const unit = match?.chaos ?? 0
       const total = unit * qty
@@ -510,6 +527,6 @@ export function valueItems(
     byTab.set(tab.tabId, tabAgg)
   }
 
-  const items = [...groups.values()].sort((a, b) => b.totalChaos - a.totalChaos || b.unitChaos - a.unitChaos)
-  return { items, byTab, totalChaos, itemCount, pricedCount }
+  const sorted = [...groups.values()].sort((a, b) => b.totalChaos - a.totalChaos || b.unitChaos - a.unitChaos)
+  return { items: sorted, byTab, totalChaos, itemCount, pricedCount, errorCount }
 }

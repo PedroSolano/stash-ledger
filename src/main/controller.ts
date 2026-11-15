@@ -10,6 +10,7 @@ import type {
   SnapshotSummary,
   StashTabInfo
 } from '../shared/types'
+import { logError } from './log'
 import { AuthManager } from './auth/authManager'
 import { SessionAuth } from './auth/sessionAuth'
 import { DEMO_TABS, demoItems } from './demo/fixtures'
@@ -260,7 +261,12 @@ export class AppController {
   /** Busca as abas selecionadas, precifica tudo e grava um snapshot. */
   takeSnapshot(): Promise<SnapshotDetail> {
     if (this.snapshotRunning) return this.snapshotRunning
-    this.snapshotRunning = this.doSnapshot().finally(() => {
+    this.snapshotRunning = this.doSnapshot()
+      .catch((err: unknown) => {
+        logError('snapshot', err, { method: this.method(), league: this.settings.get().league })
+        throw err
+      })
+      .finally(() => {
       this.snapshotRunning = null
       this.deps.emitProgress({ kind: 'idle' })
     })
@@ -296,10 +302,23 @@ export class AppController {
     }
     this.deps.emitProgress({ kind: 'tabs', done: tabs.length, total: tabs.length })
 
+    let logged = 0
     const result = valueItems(tabItems, index, {
       ...DEFAULT_PRICING,
       priceBaseTypes: s.priceBaseTypes,
-      includeLowConfidence: s.includeLowConfidence
+      includeLowConfidence: s.includeLowConfidence,
+      onItemError: (err, item) => {
+        // Limita o volume: os primeiros 20 erros por snapshot bastam para diagnosticar.
+        if (logged++ < 20) {
+          logError('pricing', err, {
+            typeLine: item.typeLine,
+            name: item.name,
+            baseType: item.baseType,
+            frameType: item.frameType,
+            ilvl: item.ilvl
+          })
+        }
+      }
     })
     const detail: SnapshotDetail = {
       id: randomUUID(),
@@ -309,6 +328,7 @@ export class AppController {
       divineChaos: index.divineChaos,
       itemCount: result.itemCount,
       pricedCount: result.pricedCount,
+      errorCount: result.errorCount || undefined,
       tabs: tabs.map((t) => ({
         id: t.id,
         name: t.name,

@@ -146,6 +146,9 @@ export function SettingsModal({ state, update, onClose, onSave, onClearHistory }
               Apagar histórico desta liga
             </button>
           )}
+          <button className="btn" style={{ marginLeft: onClearHistory ? 10 : 0 }} onClick={() => void window.api.openLog()}>
+            Abrir log de erros
+          </button>
           {!state.secureStorage && (
             <div className="banner" style={{ marginTop: 16 }}>
               O sistema não oferece armazenamento criptografado: o login não será lembrado entre sessões.

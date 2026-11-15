@@ -31,6 +31,7 @@ const api: StashLedgerApi = {
     ipcRenderer.on('snapshot', listener)
     return () => ipcRenderer.removeListener('snapshot', listener)
   },
+  openLog: () => ipcRenderer.invoke('log:open'),
   getUpdate: () => ipcRenderer.invoke('update:get'),
   checkUpdate: () => ipcRenderer.invoke('update:check'),
   installUpdate: () => ipcRenderer.invoke('update:install'),
