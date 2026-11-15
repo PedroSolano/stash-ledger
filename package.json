@@ -1,7 +1,7 @@
 {
   "name": "stash-ledger",
   "productName": "Stash Ledger",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Avaliador local de stash do Path of Exile com preços do poe.ninja e login oficial da GGG.",
   "private": true,
   "author": "PedroSolano",
