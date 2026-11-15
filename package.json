@@ -1,0 +1,43 @@
+{
+  "name": "stash-ledger",
+  "productName": "Stash Ledger",
+  "version": "0.1.0",
+  "description": "Avaliador local de stash do Path of Exile com preços do poe.ninja e login oficial da GGG.",
+  "private": true,
+  "author": "PedroSolano",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PedroSolano/stash-ledger.git"
+  },
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "vitest run",
+    "price-check": "tsx scripts/price-check.ts",
+    "dist": "electron-vite build && electron-builder --win --publish never"
+  },
+  "devDependencies": {
+    "@fontsource/alegreya-sans": "^5.3.0",
+    "@fontsource/alegreya-sc": "^5.3.0",
+    "@fontsource/cinzel": "^5.3.0",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "electron": "^45.3.2",
+    "electron-builder": "^26.18.0",
+    "electron-vite": "^6.0.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  }
+}

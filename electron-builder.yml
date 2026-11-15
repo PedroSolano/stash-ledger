@@ -1,0 +1,22 @@
+appId: app.stashledger.desktop
+productName: Stash Ledger
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**
+  - package.json
+artifactName: StashLedger-Setup-${version}.${ext}
+win:
+  target: nsis
+# Instalação por usuário, sem pedir administrador: as atualizações também rodam sem UAC.
+nsis:
+  oneClick: true
+  perMachine: false
+  deleteAppDataOnUninstall: false
+# O auto-update lê os releases públicos deste repositório (latest.yml + instalador).
+publish:
+  provider: github
+  owner: PedroSolano
+  repo: stash-ledger
+  releaseType: release

@@ -1,0 +1,270 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { AppState, ProgressEvent, Settings, SnapshotDetail, SnapshotSummary, UpdateState } from '../../shared/types'
+import { Dashboard } from './components/Dashboard'
+import { SettingsModal } from './components/SettingsModal'
+import { TabPicker } from './components/TabPicker'
+import { UpdateBanner } from './components/UpdateBanner'
+import { Welcome } from './components/Welcome'
+import { ago } from './lib/format'
+
+const api = window.api
+
+function progressText(p: ProgressEvent): string | null {
+  switch (p.kind) {
+    case 'prices':
+      return p.done < p.total ? `Atualizando preços do poe.ninja… ${p.done}/${p.total}` : null
+    case 'tabs':
+      return p.done < p.total ? `Buscando abas ${p.done + 1}/${p.total}${p.tabName ? ` · ${p.tabName}` : ''}` : null
+    case 'ratelimit':
+      return `Aguardando o limite de requisições da GGG (${Math.ceil(p.waitMs / 1000)} s)…`
+    default:
+      return null
+  }
+}
+
+export function App() {
+  const [state, setState] = useState<AppState | null>(null)
+  const [leagues, setLeagues] = useState<string[]>([])
+  const [latest, setLatest] = useState<SnapshotDetail | null>(null)
+  const [history, setHistory] = useState<SnapshotSummary[]>([])
+  const [progress, setProgress] = useState<ProgressEvent>({ kind: 'idle' })
+  const [busy, setBusy] = useState<'login' | 'session' | 'demo' | 'snapshot' | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [modal, setModal] = useState<'tabs' | 'settings' | null>(null)
+  const [update, setUpdate] = useState<UpdateState>({ status: 'idle' })
+  const [, setTick] = useState(0)
+  const autoOpened = useRef(false)
+
+  const fail = (e: unknown): void => setError((e as Error)?.message?.replace(/^Error invoking remote method '[^']+': (Error: )?/, '') ?? String(e))
+
+  useEffect(() => {
+    api.getState().then(setState).catch(fail)
+    const offP = api.onProgress((p) => {
+      setProgress(p)
+      if (p.kind === 'error') setError(p.message)
+    })
+    const offS = api.onSnapshot((snap) => {
+      setLatest(snap)
+      const { items: _i, pricesUpdatedAt: _p, ...summary } = snap
+      setHistory((h) => (h.some((x) => x.id === snap.id) ? h : [...h, summary]))
+    })
+    api.getUpdate().then(setUpdate).catch(() => undefined)
+    const offU = api.onUpdate(setUpdate)
+    const timer = setInterval(() => setTick((t) => t + 1), 30_000)
+    return () => {
+      offP()
+      offS()
+      offU()
+      clearInterval(timer)
+    }
+  }, [])
+
+  const session = !!state && (state.demo || state.auth.loggedIn)
+  const league = state?.settings.league ?? null
+  // Mesma chave usada pelo processo principal (controller.selectionKey).
+  const selPrefix = state?.demo ? 'demo:' : state?.auth.method === 'session' ? 'session:' : ''
+  const selKey = state && league ? `${selPrefix}${league}` : ''
+  const selected = state && selKey ? (state.settings.selectedTabs[selKey] ?? []) : []
+
+  // Ligas disponíveis ao entrar na sessão.
+  useEffect(() => {
+    if (!session) return
+    api
+      .listLeagues()
+      .then(async (ls) => {
+        setLeagues(ls)
+        if (ls.length && (!league || !ls.includes(league))) setState(await api.selectLeague(ls[0]))
+      })
+      .catch(fail)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, state?.demo])
+
+  // Histórico e último snapshot da liga escolhida.
+  useEffect(() => {
+    if (!session || !league) return
+    Promise.all([api.getLatest(league), api.getSnapshots(league)])
+      .then(([l, h]) => {
+        setLatest(l)
+        setHistory(h)
+      })
+      .catch(fail)
+  }, [session, league, state?.demo])
+
+  // Primeira vez numa liga sem abas escolhidas: abre o seletor.
+  useEffect(() => {
+    if (session && league && !selected.length && !autoOpened.current) {
+      autoOpened.current = true
+      setModal('tabs')
+    }
+  }, [session, league, selected.length])
+
+  const run = useCallback(async (kind: 'login' | 'session' | 'demo' | 'snapshot', fn: () => Promise<void>): Promise<boolean> => {
+    setBusy(kind)
+    setError(null)
+    try {
+      await fn()
+      return true
+    } catch (e) {
+      fail(e)
+      // A sessão pode ter sido descartada (POESESSID recusado): sincroniza o estado.
+      api.getState().then(setState).catch(() => undefined)
+      return false
+    } finally {
+      setBusy(null)
+      setProgress({ kind: 'idle' })
+    }
+  }, [])
+
+  const snapshot = async (): Promise<void> => {
+    await run('snapshot', async () => {
+      await api.takeSnapshot()
+    })
+  }
+
+  const saveSettings = async (patch: Partial<Settings>): Promise<void> => setState(await api.updateSettings(patch))
+
+  if (!state) return null
+
+  const modals = (
+    <>
+      {modal === 'settings' && (
+        <SettingsModal
+          state={state}
+          update={update}
+          onClose={() => setModal(null)}
+          onSave={saveSettings}
+          onClearHistory={
+            session && league
+              ? async () => {
+                  await api.clearHistory(league)
+                  setHistory([])
+                  setLatest(null)
+                }
+              : null
+          }
+        />
+      )}
+      {modal === 'tabs' && league && (
+        <TabPicker
+          league={league}
+          selected={selected}
+          sessionMode={state.auth.method === 'session' && !state.demo}
+          onClose={() => setModal(null)}
+          onSave={async (ids) => {
+            setModal(null)
+            setState(await api.selectTabs(league, ids))
+          }}
+        />
+      )}
+    </>
+  )
+
+  const banner = <UpdateBanner update={update} busy={busy === 'snapshot'} />
+
+  if (!session) {
+    return (
+      <>
+        {banner}
+        <Welcome
+          configured={state.configured}
+          busy={busy === 'login' || busy === 'session' || busy === 'demo' ? busy : null}
+          error={error}
+          onLogin={() => void run('login', async () => setState(await api.login()))}
+          onCancelLogin={() => void api.cancelLogin()}
+          onSessionLogin={(account, sessid) => run('session', async () => setState(await api.loginSession(account, sessid)))}
+          onDemo={() => void run('demo', async () => setState(await api.startDemo()))}
+          onSettings={() => setModal('settings')}
+        />
+        {modals}
+      </>
+    )
+  }
+
+  const status = progressText(progress)
+
+  return (
+    <div className="app">
+      {banner}
+      <div className="topbar">
+        <div className="brand">
+          <span className="brand-mark">
+            <span>S</span>
+          </span>
+          Stash Ledger
+        </div>
+        <select
+          className="select"
+          aria-label="Liga"
+          value={league ?? ''}
+          onChange={async (e) => setState(await api.selectLeague(e.target.value))}
+        >
+          {!leagues.length && league && <option value={league}>{league}</option>}
+          {leagues.map((l) => (
+            <option key={l} value={l}>
+              {l}
+            </option>
+          ))}
+        </select>
+        <button className="btn" onClick={() => setModal('tabs')}>
+          Abas ({selected.length})
+        </button>
+        <button className="btn primary" onClick={snapshot} disabled={busy === 'snapshot' || !selected.length}>
+          {busy === 'snapshot' ? 'Atualizando…' : 'Atualizar agora'}
+        </button>
+        <span className="spacer" />
+        {state.demo ? (
+          <span className="pill demo">Modo demonstração</span>
+        ) : (
+          <span className="pill" title={state.auth.method === 'session' ? 'Conectado via POESESSID (endpoint antigo do site)' : 'Conectado via OAuth oficial'}>
+            {state.auth.username}
+            {state.auth.method === 'session' ? ' · sessão' : ''}
+          </span>
+        )}
+        <button className="btn ghost" onClick={() => setModal('settings')} aria-label="Configurações">
+          ⚙ Configurações
+        </button>
+        <button
+          className="btn ghost"
+          onClick={async () => {
+            setLatest(null)
+            setHistory([])
+            setState(state.demo ? await api.stopDemo() : await api.logout())
+          }}
+        >
+          {state.demo ? 'Sair da demonstração' : 'Sair'}
+        </button>
+      </div>
+      <div className="statusbar" aria-live="polite">
+        {status ? (
+          <span className="progress">{status}</span>
+        ) : (
+          <span>
+            {latest ? `Último snapshot ${ago(latest.takenAt)}` : 'Sem snapshots nesta liga'}
+            {state.settings.autoSnapshotMinutes ? ` · automático a cada ${state.settings.autoSnapshotMinutes} min` : ''}
+          </span>
+        )}
+      </div>
+      <div className="content">
+        <div className="dashboard">
+          {error && (
+            <div className="banner" role="alert">
+              <span>{error}</span>
+              <span className="spacer" />
+              <button className="btn ghost" onClick={() => setError(null)}>
+                Fechar
+              </button>
+            </div>
+          )}
+          <Dashboard
+            latest={latest}
+            history={history}
+            hideBelow={state.settings.hideBelowChaos}
+            onHideBelowChange={(v) => void saveSettings({ hideBelowChaos: v })}
+          />
+        </div>
+        <div className="disclaimer">Este produto não é afiliado nem endossado pela Grinding Gear Games. Preços: poe.ninja.</div>
+      </div>
+      {modals}
+    </div>
+  )
+}

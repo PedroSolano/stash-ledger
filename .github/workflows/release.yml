@@ -1,0 +1,44 @@
+# Ao enviar uma tag vX.Y.Z, o GitHub compila o instalador do Windows e publica um release.
+# O app instalado nos computadores dos seus amigos encontra esse release e se atualiza sozinho.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Testes e tipos
+        run: |
+          npm test
+          npm run typecheck
+
+      - name: Confere se a tag bate com a versão do package.json
+        shell: bash
+        run: |
+          v="v$(node -p "require('./package.json').version")"
+          if [ "$v" != "$GITHUB_REF_NAME" ]; then echo "Tag $GITHUB_REF_NAME diferente da versão $v"; exit 1; fi
+
+      - name: Compila e publica no GitHub Releases
+        run: |
+          npx electron-vite build
+          npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Opcional: quando tiver um app OAuth da GGG, crie estas variáveis em Settings → Variables.
+          MAIN_VITE_POE_CLIENT_ID: ${{ vars.POE_CLIENT_ID }}
+          MAIN_VITE_POE_CONTACT: ${{ vars.POE_CONTACT }}
