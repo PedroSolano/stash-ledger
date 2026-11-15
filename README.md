@@ -66,7 +66,7 @@ Prices come from a small compressed cache on your computer. While the app is ope
 ## Troubleshooting
 
 - **"GGG rejected the session"**: your POESESSID expired, usually because you signed out of the website. Copy a new one and sign in again.
-- **A tab shows as empty**: map and unique tabs (and possibly some other special tabs) may come back empty through the website endpoint. Most tabs, including currency, fragment, essence and divination card tabs, work fine.
+- **A tab shows as empty**: with POESESSID sign-in, special tabs such as Map, Unique, Delve, Delirium, Breach and Ritual come back empty through the website endpoint. Regular, premium, quad, currency, fragment, essence, divination card, blight and flask tabs work fine.
 - **"Waiting for GGG rate limit"**: normal when you track many tabs. GGG limits how fast stash tabs can be read, and the app waits instead of getting you rate limited.
 - **"N failed" on the Priced items card**: some items couldn't be read. Go to **Settings → Open error log** and attach the file to a [new issue](https://github.com/PedroSolano/stash-ledger/issues). The log never contains your POESESSID.
 
