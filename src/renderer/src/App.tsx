@@ -270,6 +270,7 @@ export function App() {
             hideBelow={state.settings.hideBelowChaos}
             onHideBelowChange={(v) => void saveSettings({ hideBelowChaos: v })}
             layout={layout}
+            sessionMode={state.auth.method === 'session' && !state.demo}
           />
         </div>
         <div className="disclaimer">This product isn't affiliated with or endorsed by Grinding Gear Games in any way. Prices: poe.ninja.</div>

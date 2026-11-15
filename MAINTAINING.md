@@ -122,6 +122,6 @@ scripts/setup-wsl.sh    development environment setup
 
 - Without an approved `client_id`, the official sign-in and API stash reading couldn't be tested live; the OAuth flow is tested against a local server.
 - Matching for viscera, scrying orbs and imbued gems (recent mechanics) is based on poe.ninja's format and hasn't been checked against real API items.
-- POESESSID mode: the legacy endpoint returns no items for special tabs (seen empty with a real stash: Map, Unique, Delve, Delirium, Breach, Ritual).
+- POESESSID mode: the legacy endpoint returns the Unique Collection tab as `{"items": [], "uniqueLayout": {}}` even when it has items (confirmed with a real stash), so the UI marks it "not readable". Delve and Delirium tabs work (the response includes `delveLayout`/`deliriumLayout`). Map tabs are untested. The official API (OAuth) handles unique and map tabs through sub-tabs, which `stash_items` already supports. Empty tabs are logged as `tab-empty` with the response shape (field names and sizes only).
 - Upgrading from the Electron version (0.2.x): `store::cleanup_legacy` didn't fully remove the old Chromium cache folders from `%APPDATA%\Stash Ledger` on Windows (no error was logged; the same folders delete fine from PowerShell). At most ~8 MB of dead cache stays behind; it's safe to delete.
 - Not implemented yet: character inventories (`account:characters` scope), Path of Exile 2, CSV export.

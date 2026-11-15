@@ -96,8 +96,15 @@ export function TabPicker({ league, selected, sessionMode, onClose, onSave }: Pr
                     <span className="dot" style={t.colour ? { background: `#${t.colour}` } : undefined} />
                     <span>{t.name}</span>
                     {sessionMode && LEGACY_LIMITED.has(t.type) && (
-                      <span className="warn" title="The legacy website endpoint may not return items for this tab type">
-                        may come back empty
+                      <span
+                        className="warn"
+                        title={
+                          t.type === 'UniqueStash'
+                            ? 'GGG does not return the Unique Collection tab to POESESSID sign-in. Keep valuable uniques in a regular tab.'
+                            : 'The legacy website endpoint may not return items for this tab type'
+                        }
+                      >
+                        {t.type === 'UniqueStash' ? 'not readable with POESESSID' : 'may come back empty'}
                       </span>
                     )}
                     <span className="type">{TYPE_LABEL[t.type] ?? t.type.replace(/Stash$/, '')}</span>

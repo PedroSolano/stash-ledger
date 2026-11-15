@@ -99,6 +99,8 @@ export interface PricedItem {
 export interface TabValue {
   id: string
   name: string
+  /** Tipo da aba na GGG (ex.: UniqueStash). */
+  type?: string
   colour?: string
   chaos: number
   itemCount: number

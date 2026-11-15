@@ -15,6 +15,7 @@ interface Props {
   hideBelow: number
   onHideBelowChange: (v: number) => void
   layout: Layout
+  sessionMode?: boolean
 }
 
 const CHART_HEIGHT: Record<Layout, number> = { compact: 220, normal: 230, wide: 260, ultrawide: 300 }
@@ -38,8 +39,10 @@ function Delta({ value, unit }: { value: number; unit: Unit }) {
   )
 }
 
-export function Dashboard({ latest, history, hideBelow, onHideBelowChange, layout }: Props) {
+export function Dashboard({ latest, history, hideBelow, onHideBelowChange, layout, sessionMode }: Props) {
   const spacious = layout === 'wide' || layout === 'ultrawide'
+  // O endpoint do POESESSID devolve a Unique Collection sempre vazia (confirmado com uma stash real).
+  const unreadable = (t: { type?: string; itemCount: number }): boolean => !!sessionMode && t.type === 'UniqueStash' && !t.itemCount
   const [range, setRange] = useState<Range>('24h')
   const [unit, setUnit] = useState<Unit>('div')
   const [showTable, setShowTable] = useState(false)
@@ -192,8 +195,11 @@ export function Dashboard({ latest, history, hideBelow, onHideBelowChange, layou
                 <div className="bar" style={{ width: `${Math.max(0.5, (t.chaos / maxTab) * 100)}%` }} />
               </div>
               {spacious && (
-                <span className={`tab-count ${t.itemCount ? '' : 'empty-tab'}`}>
-                  {t.itemCount ? `${num(t.itemCount)} items` : 'empty'}
+                <span
+                  className={`tab-count ${t.itemCount ? '' : 'empty-tab'}`}
+                  title={unreadable(t) ? 'GGG does not return the Unique Collection tab to POESESSID sign-in. Keep valuable uniques in a regular tab.' : undefined}
+                >
+                  {t.itemCount ? `${num(t.itemCount)} items` : unreadable(t) ? 'not readable' : 'empty'}
                 </span>
               )}
               <span className="tab-val">{price(t.chaos, divine)}</span>

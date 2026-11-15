@@ -357,6 +357,7 @@ export class Controller {
       tabs: tabs.map((t) => ({
         id: t.id,
         name: t.name,
+        type: t.type,
         colour: t.colour,
         chaos: result.byTab.get(t.id)?.chaos ?? 0,
         itemCount: result.byTab.get(t.id)?.itemCount ?? 0
