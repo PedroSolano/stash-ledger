@@ -535,6 +535,15 @@ code {
 
 .card {
   padding: 16px 18px;
+  /* Itens de grade não podem ser mais largos que a coluna (nada escapa do painel). */
+  min-width: 0;
+}
+.tiles > *,
+.dashboard > * {
+  min-width: 0;
+}
+.chart-wrap {
+  max-width: 100%;
 }
 .card h2 {
   margin: 0;

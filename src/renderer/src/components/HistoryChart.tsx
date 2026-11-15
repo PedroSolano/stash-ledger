@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { fmtDateTime, fmtDay, fmtTime, num } from '../lib/format'
+import { niceTicks } from '../lib/scale'
 
 export interface Point {
   t: number
@@ -16,21 +17,6 @@ interface Props {
 
 const PAD = { top: 16, right: 64, bottom: 26, left: 52 }
 
-/** Escala "bonita" para o eixo Y (1, 2, 2.5, 5 × 10^n). */
-function niceTicks(min: number, max: number, count = 4): number[] {
-  if (min === max) {
-    const d = Math.abs(min) * 0.05 || 1
-    min -= d
-    max += d
-  }
-  const raw = (max - min) / count
-  const mag = Math.pow(10, Math.floor(Math.log10(raw)))
-  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? raw
-  const start = Math.floor(min / step) * step
-  const ticks: number[] = []
-  for (let v = start; v <= max + step * 0.5; v += step) ticks.push(Number(v.toFixed(10)))
-  return ticks
-}
 
 /** Marcas do eixo X sem rótulos repetidos (snapshots próximos caem no mesmo minuto). */
 function timeTicks(t0: number, t1: number, width: number, multiDay: boolean): { t: number; label: string }[] {
@@ -152,7 +138,19 @@ export function HistoryChart({ points, unit, digits, height = 230, fill = false 
             {t.label}
           </text>
         ))}
-        <path d={path} fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        {/* Garantia extra: a linha nunca desenha fora da área do gráfico. */}
+        <clipPath id="plot-area">
+          <rect x={PAD.left - 4} y={PAD.top - 4} width={width - PAD.left - PAD.right + 8} height={HEIGHT - PAD.top - PAD.bottom + 8} />
+        </clipPath>
+        <path
+          d={path}
+          clipPath="url(#plot-area)"
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth={2}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
         <circle cx={x(last.t)} cy={y(last.v)} r={4} fill="var(--accent)" stroke="var(--surface)" strokeWidth={2} />
         <text className="end-label" x={x(last.t) + 10} y={y(last.v) + 4}>
           {num(last.v, digits)}
