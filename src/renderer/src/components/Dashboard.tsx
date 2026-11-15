@@ -29,7 +29,8 @@ function fmtUnit(v: number, unit: Unit): string {
 
 /** Variação na mesma unidade do gráfico, para os cartões nunca contradizerem a linha. */
 function Delta({ value, unit }: { value: number; unit: Unit }) {
-  if (!value) return <span className="value">0 {unit === 'div' ? 'div' : 'c'}</span>
+  // Variações menores que a precisão exibida viram "0" neutro (antes saía "−0 div" em vermelho).
+  if (!value || fmtUnit(value, unit).startsWith('0 ')) return <span className="value">0 {unit === 'div' ? 'div' : 'c'}</span>
   const up = value > 0
   return (
     <span className={`value ${up ? 'delta-up' : 'delta-down'}`}>
