@@ -64,7 +64,7 @@ export class NinjaClient {
     const res = await this.fetchImpl(`${this.base()}/poe1/api/economy/leagues`, {
       headers: { 'User-Agent': this.opts.userAgent(), Accept: 'application/json' }
     })
-    if (!res.ok) throw new Error(`poe.ninja respondeu ${res.status} ao listar ligas`)
+    if (!res.ok) throw new Error(`poe.ninja responded ${res.status} when listing leagues`)
     const data = (await res.json()) as { id: string }[]
     return data.map((l) => l.id)
   }
@@ -163,7 +163,7 @@ export class NinjaClient {
       await writeJsonAtomic(file, touched)
       return touched
     }
-    if (!res.ok) throw new Error(`poe.ninja ${res.status} em ${cat.type}`)
+    if (!res.ok) throw new Error(`poe.ninja ${res.status} on ${cat.type}`)
     const raw = await res.json()
     const entry: CacheEntry = {
       etag: res.headers.get('etag') ?? undefined,

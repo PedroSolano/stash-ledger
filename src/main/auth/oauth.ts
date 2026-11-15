@@ -46,11 +46,11 @@ export function parseLoopbackRedirect(uri: string): URL {
   try {
     url = new URL(uri)
   } catch {
-    throw new Error('Redirect URI inválida.')
+    throw new Error('Invalid Redirect URI.')
   }
   const hostOk = ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)
   if (url.protocol !== 'http:' || !hostOk || !url.port) {
-    throw new Error('A Redirect URI precisa ser local com porta, ex.: http://127.0.0.1:8080/callback')
+    throw new Error('The Redirect URI must be local with a port, e.g. http://127.0.0.1:8080/callback')
   }
   return url
 }
@@ -62,7 +62,7 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 function page(title: string, message: string): string {
-  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${title}</title>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${title}</title>
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
 <style>body{font-family:system-ui,sans-serif;background:#16130f;color:#eae2d6;display:grid;place-items:center;height:100vh;margin:0}
 main{max-width:420px;text-align:center}h1{font-size:20px;color:#d9a441}p{color:#b8ad9c}</style></head>
@@ -71,7 +71,7 @@ main{max-width:420px;text-align:center}h1{font-size:20px;color:#d9a441}p{color:#
 
 export class LoginCancelled extends Error {
   constructor() {
-    super('Login cancelado.')
+    super('Sign-in cancelled.')
   }
 }
 
@@ -105,7 +105,7 @@ export class OAuthFlow {
         if (err) reject(err)
         else resolve(value!)
       }
-      const timer = setTimeout(() => finish(new Error('Tempo esgotado aguardando o login no navegador.')), LOGIN_TIMEOUT_MS)
+      const timer = setTimeout(() => finish(new Error('Timed out waiting for sign-in in the browser.')), LOGIN_TIMEOUT_MS)
       this.cancelFn = () => finish(new LoginCancelled())
 
       const server = createServer((req, res) => {
@@ -120,25 +120,25 @@ export class OAuthFlow {
         res.setHeader('Content-Type', 'text/html; charset=utf-8')
         res.setHeader('Cache-Control', 'no-store')
         if (!safeEqual(gotState, state)) {
-          res.writeHead(400).end(page('Falha no login', 'Parâmetro state inválido. Tente novamente pelo app.'))
-          finish(new Error('Resposta de login com state inválido (possível requisição forjada).'))
+          res.writeHead(400).end(page('Sign-in failed', 'Invalid state parameter. Please try again from the app.'))
+          finish(new Error('Sign-in response had an invalid state (possible forged request).'))
           return
         }
         if (error || !gotCode) {
-          const desc = url.searchParams.get('error_description') ?? error ?? 'sem código'
-          res.writeHead(400).end(page('Login não autorizado', 'Você pode fechar esta aba e tentar de novo no app.'))
-          finish(new Error(`A GGG recusou a autorização: ${desc}`))
+          const desc = url.searchParams.get('error_description') ?? error ?? 'no code'
+          res.writeHead(400).end(page('Sign-in not authorized', 'You can close this tab and try again in the app.'))
+          finish(new Error(`GGG declined the authorization: ${desc}`))
           return
         }
-        res.writeHead(200).end(page('Login concluído', 'Pode fechar esta aba e voltar para o Stash Ledger.'))
+        res.writeHead(200).end(page('Signed in', 'You can close this tab and return to Stash Ledger.'))
         finish(null, gotCode)
       })
       this.server = server
       server.on('error', (err: NodeJS.ErrnoException) => {
         const msg =
           err.code === 'EADDRINUSE'
-            ? `A porta ${redirect.port} já está em uso. Feche o outro programa ou registre outra Redirect URI.`
-            : `Não foi possível abrir o servidor local de login: ${err.message}`
+            ? `Port ${redirect.port} is already in use. Close the other program or register a different Redirect URI.`
+            : `Could not start the local sign-in server: ${err.message}`
         finish(new Error(msg))
       })
       const host = redirect.hostname === '[::1]' ? '::1' : '127.0.0.1'
@@ -191,7 +191,7 @@ export class OAuthFlow {
     }
     if (!res.ok || typeof json.access_token !== 'string') {
       const desc = (json.error_description ?? json.error ?? `HTTP ${res.status}`) as string
-      throw new Error(`Falha ao obter token da GGG: ${desc}`)
+      throw new Error(`Failed to get a token from GGG: ${desc}`)
     }
     return json as unknown as TokenResponse
   }

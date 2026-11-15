@@ -41,9 +41,11 @@ function send(channel: string, payload: ProgressEvent | SnapshotDetail | UpdateS
 }
 
 function createWindow(): void {
+  // Gancho de desenvolvimento: STASH_LEDGER_WINDOW=LxA define o tamanho da janela (testar layouts).
+  const devSize = isDev ? /^(\d+)x(\d+)$/.exec(process.env.STASH_LEDGER_WINDOW ?? '') : null
   mainWindow = new BrowserWindow({
-    width: 1320,
-    height: 860,
+    width: devSize ? Number(devSize[1]) : 1320,
+    height: devSize ? Number(devSize[2]) : 860,
     minWidth: 980,
     minHeight: 620,
     show: false,
@@ -79,6 +81,9 @@ function createWindow(): void {
 
   // Gancho de desenvolvimento: STASH_LEDGER_SCREENSHOT=arquivo.png captura a janela e fecha o app.
   const shot = isDev ? process.env.STASH_LEDGER_SCREENSHOT : undefined
+  // STASH_LEDGER_ZOOM=0.5 simula uma tela com o dobro de pixels CSS (ex.: ultrawide).
+  const zoom = isDev ? Number(process.env.STASH_LEDGER_ZOOM) : NaN
+  if (zoom > 0) mainWindow.webContents.on('did-finish-load', () => mainWindow?.webContents.setZoomFactor(zoom))
   if (shot) {
     mainWindow.webContents.once('did-finish-load', () => {
       setTimeout(async () => {
@@ -101,7 +106,7 @@ type Handler = (...args: never[]) => unknown
 function handle(channel: string, fn: Handler): void {
   ipcMain.handle(channel, async (event: IpcMainInvokeEvent, ...args: unknown[]) => {
     // Aceita chamadas apenas da janela principal do app.
-    if (!mainWindow || event.sender !== mainWindow.webContents) throw new Error('Origem não autorizada.')
+    if (!mainWindow || event.sender !== mainWindow.webContents) throw new Error('Unauthorized origin.')
     return (fn as (...a: unknown[]) => unknown)(...args)
   })
 }

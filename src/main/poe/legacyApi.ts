@@ -19,7 +19,7 @@ export interface LegacyCreds {
 export class SessionInvalidError extends Error {
   constructor() {
     super(
-      'A GGG recusou a sessão. Confira o POESESSID (ele expira quando você sai da conta no site) e o nome da conta com o #1234.'
+      'GGG rejected the session. Check your POESESSID (it expires when you sign out of the website) and your account name including the #1234.'
     )
   }
 }
@@ -28,14 +28,14 @@ export class SessionInvalidError extends Error {
 export function normalizeAccountName(raw: string): string {
   const v = String(raw ?? '').trim()
   if (!/^[^\s#\p{Cc}][^#\p{Cc}]{1,40}(#\d{4})?$/u.test(v)) {
-    throw new Error('Nome da conta inválido. Use o formato que aparece no site, por exemplo SeuNome#1234.')
+    throw new Error('Invalid account name. Use the format shown on the website, e.g. YourName#1234.')
   }
   return v
 }
 
 export function normalizePoesessid(raw: string): string {
   const v = String(raw ?? '').trim()
-  if (!POESESSID_RE.test(v)) throw new Error('POESESSID inválido: deve ter 32 caracteres hexadecimais.')
+  if (!POESESSID_RE.test(v)) throw new Error('Invalid POESESSID: it must be 32 hexadecimal characters.')
   return v.toLowerCase()
 }
 
@@ -94,7 +94,7 @@ export class LegacyApi implements StashSource {
   async request(league: string, tabIndex: number, withTabs: boolean, override?: LegacyCreds, attempt = 0): Promise<LegacyResponse> {
     const creds = override ?? this.creds()
     if (!creds) throw new SessionInvalidError()
-    if (!Number.isInteger(tabIndex) || tabIndex < 0 || tabIndex > 10000) throw new Error('Índice de aba inválido.')
+    if (!Number.isInteger(tabIndex) || tabIndex < 0 || tabIndex > 10000) throw new Error('Invalid tab index.')
     const url = new URL(ENDPOINT)
     url.searchParams.set('league', league)
     url.searchParams.set('realm', 'pc')
@@ -121,15 +121,15 @@ export class LegacyApi implements StashSource {
     const isJson = (res.headers.get('content-type') ?? '').includes('json')
     if (!isJson) {
       if (res.ok) throw new SessionInvalidError()
-      throw new Error(`O site da GGG respondeu HTTP ${res.status}.`)
+      throw new Error(`The GGG website responded with HTTP ${res.status}.`)
     }
     const body = (await res.json()) as LegacyResponse
     if (body.error) {
       if (body.error.code === 6 || body.error.code === 8) throw new SessionInvalidError()
-      if (body.error.code === 1) throw new Error(`Stash não encontrada na liga ${league}.`)
-      throw new Error(`Site da GGG: ${body.error.message ?? `erro ${body.error.code}`}`)
+      if (body.error.code === 1) throw new Error(`Stash not found in league ${league}.`)
+      throw new Error(`GGG website: ${body.error.message ?? `error ${body.error.code}`}`)
     }
-    if (!res.ok) throw new Error(`O site da GGG respondeu HTTP ${res.status}.`)
+    if (!res.ok) throw new Error(`The GGG website responded with HTTP ${res.status}.`)
     return body
   }
 

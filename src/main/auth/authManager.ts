@@ -15,7 +15,7 @@ const SKEW_MS = 2 * 60 * 1000
 
 export class NotLoggedInError extends Error {
   constructor() {
-    super('Sessão expirada. Faça login novamente.')
+    super('Your session expired. Please sign in again.')
   }
 }
 
@@ -76,7 +76,7 @@ export class AuthManager {
 
   async login(): Promise<AuthStatus> {
     const clientId = this.cfg.clientId()
-    if (!clientId) throw new Error('Configure o Client ID do seu app GGG nas configurações antes de entrar.')
+    if (!clientId) throw new Error('Set your GGG app Client ID in Settings before signing in.')
     const res = await this.flow.run({
       clientId,
       redirectUri: this.cfg.redirectUri(),

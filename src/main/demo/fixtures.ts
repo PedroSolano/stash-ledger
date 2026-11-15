@@ -27,11 +27,11 @@ function sockets(groups: number[]): PoeItem['sockets'] {
 }
 
 export const DEMO_TABS: StashTabInfo[] = [
-  { id: 'd0000000a1', name: 'Moedas', type: 'CurrencyStash', index: 0, colour: 'd9a441' },
-  { id: 'd0000000b2', name: 'Fragmentos & Cartas', type: 'PremiumStash', index: 1, colour: '7b5cd6' },
-  { id: 'd0000000c3', name: 'Equipamentos', type: 'QuadStash', index: 2, colour: 'c0392b' },
-  { id: 'd0000000d4', name: 'Gemas & Mapas', type: 'PremiumStash', index: 3, colour: '2e86c1' },
-  { id: 'd0000000e5', name: 'Venda', type: 'PremiumStash', index: 4, colour: '27ae60', parentId: 'd0000000f0', parentName: 'Pasta' }
+  { id: 'd0000000a1', name: 'Currency', type: 'CurrencyStash', index: 0, colour: 'd9a441' },
+  { id: 'd0000000b2', name: 'Fragments & Cards', type: 'PremiumStash', index: 1, colour: '7b5cd6' },
+  { id: 'd0000000c3', name: 'Gear', type: 'QuadStash', index: 2, colour: 'c0392b' },
+  { id: 'd0000000d4', name: 'Gems & Maps', type: 'PremiumStash', index: 3, colour: '2e86c1' },
+  { id: 'd0000000e5', name: 'Sell', type: 'PremiumStash', index: 4, colour: '27ae60', parentId: 'd0000000f0', parentName: 'Folder' }
 ]
 
 export function demoItems(tabId: string, seed: number): PoeItem[] {

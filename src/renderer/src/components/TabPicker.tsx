@@ -13,17 +13,17 @@ const TYPE_LABEL: Record<string, string> = {
   NormalStash: 'Normal',
   PremiumStash: 'Premium',
   QuadStash: 'Quad',
-  CurrencyStash: 'Moedas',
-  FragmentStash: 'Fragmentos',
-  MapStash: 'Mapas',
-  UniqueStash: 'Únicos',
-  DivinationCardStash: 'Cartas',
-  EssenceStash: 'Essências',
-  GemStash: 'Gemas',
-  FlaskStash: 'Frascos',
+  CurrencyStash: 'Currency',
+  FragmentStash: 'Fragment',
+  MapStash: 'Map',
+  UniqueStash: 'Unique',
+  DivinationCardStash: 'Divination',
+  EssenceStash: 'Essence',
+  GemStash: 'Gem',
+  FlaskStash: 'Flask',
   DelveStash: 'Delve',
   BlightStash: 'Blight',
-  DeliriumStash: 'Delírio',
+  DeliriumStash: 'Delirium',
   MetamorphStash: 'Metamorph'
 }
 
@@ -65,27 +65,28 @@ export function TabPicker({ league, selected, sessionMode, onClose, onSave }: Pr
     <div className="backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="frame modal" role="dialog" aria-modal="true" aria-labelledby="tabs-title">
         <header>
-          <h2 id="tabs-title">Abas acompanhadas · {league}</h2>
-          <button className="btn ghost" onClick={onClose} aria-label="Fechar">
+          <h2 id="tabs-title">Tracked tabs · {league}</h2>
+          <button className="btn ghost" onClick={onClose} aria-label="Close">
             ✕
           </button>
         </header>
         <div className="body">
           <div className="toolbar">
-            <input className="input" placeholder="Filtrar abas…" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input className="input" placeholder="Filter tabs…" value={query} onChange={(e) => setQuery(e.target.value)} />
             <button className="btn" onClick={() => setPicked(new Set((tabs ?? []).map((t) => t.id)))}>
-              Todas
+              All
             </button>
             <button className="btn" onClick={() => setPicked(new Set())}>
-              Nenhuma
+              None
             </button>
           </div>
           {error && <div className="banner">{error}</div>}
-          {!tabs && !error && <div className="empty">Carregando abas da stash…</div>}
-          {tabs && !tabs.length && <div className="empty">Nenhuma aba encontrada nesta liga.</div>}
+          {!tabs && !error && <div className="empty">Loading stash tabs…</div>}
+          {tabs && !tabs.length && <div className="empty">No tabs found in this league.</div>}
           <div className="tab-list">
             {visible.map((t) => {
-              const header = t.parentName !== lastGroup && t.parentName ? <div className="group-label">Pasta · {t.parentName}</div> : null
+              const header =
+                t.parentName !== lastGroup && t.parentName ? <div className="group-label">Folder · {t.parentName}</div> : null
               lastGroup = t.parentName
               return (
                 <div key={t.id}>
@@ -95,8 +96,8 @@ export function TabPicker({ league, selected, sessionMode, onClose, onSave }: Pr
                     <span className="dot" style={t.colour ? { background: `#${t.colour}` } : undefined} />
                     <span>{t.name}</span>
                     {sessionMode && LEGACY_LIMITED.has(t.type) && (
-                      <span className="warn" title="O endpoint antigo do site pode não devolver itens deste tipo de aba">
-                        pode vir vazia
+                      <span className="warn" title="The legacy website endpoint may not return items for this tab type">
+                        may come back empty
                       </span>
                     )}
                     <span className="type">{TYPE_LABEL[t.type] ?? t.type.replace(/Stash$/, '')}</span>
@@ -107,13 +108,13 @@ export function TabPicker({ league, selected, sessionMode, onClose, onSave }: Pr
           </div>
         </div>
         <footer>
-          <span className="sub">{picked.size} selecionada(s)</span>
+          <span className="sub">{picked.size} selected</span>
           <span className="spacer" />
           <button className="btn ghost" onClick={onClose}>
-            Cancelar
+            Cancel
           </button>
           <button className="btn primary" onClick={() => onSave([...picked])} disabled={!tabs}>
-            Salvar seleção
+            Save selection
           </button>
         </footer>
       </div>

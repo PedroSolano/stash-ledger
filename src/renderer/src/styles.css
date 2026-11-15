@@ -419,11 +419,118 @@ code {
   overflow: auto;
   padding: 22px;
 }
-.dashboard {
-  max-width: 1400px;
-  margin: 0 auto;
+/* ---------- layouts (escolhidos pelo tamanho/proporção da janela) ---------- */
+
+.dash-wrap {
   display: grid;
   gap: 18px;
+  max-width: 1480px;
+  margin: 0 auto;
+}
+.dash-wrap.layout-wide,
+.dash-wrap.layout-ultrawide {
+  max-width: none;
+}
+.dashboard {
+  display: grid;
+  gap: 18px;
+  align-items: start;
+}
+.area-tiles { grid-area: tiles; }
+.area-chart { grid-area: chart; }
+.area-tabs { grid-area: tabs; }
+.area-items { grid-area: items; }
+.area-full { grid-column: 1 / -1; }
+
+.dashboard.layout-compact {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'tiles' 'chart' 'tabs' 'items';
+}
+.dashboard.layout-normal {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-areas:
+    'tiles tiles'
+    'chart tabs'
+    'items items';
+}
+/* Largo: resumo à esquerda, itens à direita com rolagem própria. */
+.dashboard.layout-wide {
+  grid-template-columns: minmax(540px, 2fr) minmax(700px, 3fr);
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas:
+    'tiles items'
+    'chart items'
+    'tabs  items';
+}
+/* Ultrawide: indicadores em cima, gráfico e abas lado a lado, itens ocupando a direita. */
+.dashboard.layout-ultrawide {
+  grid-template-columns: minmax(600px, 1.35fr) minmax(400px, 0.85fr) minmax(860px, 2.2fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'tiles tiles items'
+    'chart tabs  items';
+}
+.layout-ultrawide .area-chart,
+.layout-ultrawide .area-tabs {
+  align-self: stretch;
+}
+/* No ultrawide o gráfico ocupa toda a altura do painel. */
+.layout-ultrawide .area-chart {
+  display: flex;
+  flex-direction: column;
+}
+.chart-wrap.fill {
+  flex: 1;
+  min-height: 220px;
+}
+.chart-wrap.fill > svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.layout-compact .tiles {
+  grid-template-columns: 1fr 1fr;
+}
+.layout-compact .tiles .tile:first-child,
+.layout-wide .tiles .tile:first-child {
+  grid-column: 1 / -1;
+}
+.layout-wide .tiles {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.items-card.scroll {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+  max-height: calc(100vh - 175px);
+}
+.items-card.scroll .table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.items-card.scroll .table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #16120e;
+}
+
+.share-cell {
+  min-width: 96px;
+}
+.share-cell .share-text {
+  display: block;
+}
+.share-cell .share-bar {
+  display: block;
+  height: 3px;
+  margin: 3px 0 0 auto;
+  background: linear-gradient(90deg, #8a6d3b, var(--accent));
 }
 
 .card {
@@ -568,11 +675,6 @@ code {
   color: var(--bad) !important;
 }
 
-.grid-2 {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 18px;
-}
 
 /* ---------- gráfico ---------- */
 
@@ -1041,11 +1143,16 @@ code {
   color: var(--gold-dim);
 }
 
-@media (max-width: 1100px) {
-  .tiles {
-    grid-template-columns: 1fr 1fr;
-  }
-  .grid-2 {
-    grid-template-columns: 1fr;
-  }
+.tab-rows.with-count .tab-row {
+  grid-template-columns: minmax(90px, 175px) 1fr auto auto;
+}
+.tab-count {
+  min-width: 60px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.tab-count.empty-tab {
+  color: var(--warn);
 }

@@ -31,11 +31,11 @@ function SessionForm({ busy, onSubmit, onBack }: { busy: boolean; onSubmit: Prop
   return (
     <form className="session-form" onSubmit={submit} autoComplete="off">
       <div className="field">
-        <label htmlFor="acc">Nome da conta</label>
+        <label htmlFor="acc">Account name</label>
         <input
           id="acc"
           className="input"
-          placeholder="SeuNome#1234"
+          placeholder="YourName#1234"
           value={account}
           onChange={(e) => setAccount(e.target.value)}
           spellCheck={false}
@@ -43,8 +43,8 @@ function SessionForm({ busy, onSubmit, onBack }: { busy: boolean; onSubmit: Prop
         />
         <span className="hint">
           {noTag
-            ? 'Inclua o #1234 do final do nome, como aparece no seu perfil em pathofexile.com.'
-            : 'Exatamente como aparece no seu perfil em pathofexile.com, com o #1234.'}
+            ? 'Include the #1234 at the end, as shown on your pathofexile.com profile.'
+            : 'Exactly as shown on your pathofexile.com profile, including the #1234.'}
         </span>
       </div>
       <div className="field">
@@ -53,40 +53,40 @@ function SessionForm({ busy, onSubmit, onBack }: { busy: boolean; onSubmit: Prop
           id="sess"
           className="input"
           type="password"
-          placeholder="32 caracteres hexadecimais"
+          placeholder="32 hexadecimal characters"
           value={sessid}
           onChange={(e) => setSessid(e.target.value)}
           spellCheck={false}
           autoComplete="off"
         />
         <span className="hint">
-          No navegador, logado em pathofexile.com: F12 → Aplicativo (Application) → Cookies → https://www.pathofexile.com →
-          copie o valor de <code>POESESSID</code>.
-          {sessid && !sessOk ? ' O valor colado não tem o formato esperado.' : ''}
+          In your browser, logged in to pathofexile.com: F12 → Application → Cookies → https://www.pathofexile.com → copy
+          the value of <code>POESESSID</code>.
+          {sessid && !sessOk ? ' The pasted value does not look right.' : ''}
         </span>
       </div>
       <div className="banner info">
         <div>
-          <strong>Antes de colar, saiba:</strong>
+          <strong>Before you paste it:</strong>
           <ul>
             <li>
-              O POESESSID dá acesso <strong>total</strong> à sua conta no site. Nunca compartilhe. O app guarda ele
-              criptografado neste computador e só o envia para www.pathofexile.com.
+              Your POESESSID gives <strong>full</strong> access to your account on the website. Never share it. The app
+              stores it encrypted on this computer and only sends it to www.pathofexile.com.
             </li>
-            <li>Para invalidar o cookie a qualquer momento, saia da conta no site ("Sign Out").</li>
+            <li>To invalidate it at any time, sign out of the website.</li>
             <li>
-              Este modo usa um endpoint antigo do site, fora da API oficial. A GGG tolera ferramentas assim há anos, mas
-              pode mudá-lo ou bloqueá-lo sem aviso.
+              This mode uses a legacy website endpoint, outside the official API. GGG has tolerated tools like this for
+              years, but it may change or block it without notice.
             </li>
           </ul>
         </div>
       </div>
       <div className="actions" style={{ marginTop: 16 }}>
         <button className="btn primary big" type="submit" disabled={!sessOk || !accOk || busy}>
-          {busy ? 'Validando com a GGG…' : 'Validar e entrar'}
+          {busy ? 'Checking with GGG…' : 'Verify and sign in'}
         </button>
         <button className="btn ghost" type="button" onClick={onBack} disabled={busy}>
-          Voltar
+          Back
         </button>
       </div>
     </form>
@@ -104,9 +104,7 @@ export function Welcome({ configured, busy, error, onLogin, onCancelLogin, onSes
         </div>
         <h1>Stash Ledger</h1>
         <div className="ornament" />
-        <p className="lead">
-          Quanto vale a sua stash, com os preços do poe.ninja. Tudo roda no seu computador, sem servidor no meio.
-        </p>
+        <p className="lead">See what your stash is worth with poe.ninja prices. Everything runs on your computer, no server in between.</p>
 
         {sessionMode ? (
           <SessionForm busy={busy === 'session'} onSubmit={onSessionLogin} onBack={() => setSessionMode(false)} />
@@ -115,29 +113,25 @@ export function Welcome({ configured, busy, error, onLogin, onCancelLogin, onSes
             {busy === 'login' ? (
               <>
                 <button className="btn primary big" disabled>
-                  Aguardando autorização no navegador…
+                  Waiting for authorization in your browser…
                 </button>
                 <button className="btn ghost" onClick={onCancelLogin}>
-                  Cancelar
+                  Cancel
                 </button>
               </>
             ) : configured ? (
               <button className="btn primary big" onClick={onLogin} disabled={busy !== null}>
-                Entrar com a conta do Path of Exile
+                Sign in with Path of Exile
               </button>
             ) : null}
-            <button
-              className={`btn big ${configured ? '' : 'primary'}`}
-              onClick={() => setSessionMode(true)}
-              disabled={busy !== null}
-            >
-              Entrar com POESESSID
+            <button className={`btn big ${configured ? '' : 'primary'}`} onClick={() => setSessionMode(true)} disabled={busy !== null}>
+              Sign in with POESESSID
             </button>
             <button className="btn big" onClick={onDemo} disabled={busy !== null}>
-              {busy === 'demo' ? 'Carregando preços…' : 'Explorar no modo demonstração'}
+              {busy === 'demo' ? 'Loading prices…' : 'Try demo mode'}
             </button>
             <button className="btn ghost" onClick={onSettings}>
-              Configurações
+              Settings
             </button>
           </div>
         )}
@@ -151,16 +145,14 @@ export function Welcome({ configured, busy, error, onLogin, onCancelLogin, onSes
         {!configured && !sessionMode && (
           <div className="banner info note">
             <div>
-              <strong>Login oficial (OAuth) indisponível por enquanto.</strong> Ele exige um app registrado na GGG, que no
-              momento não está aceitando novos registros. Quando tiver um Client ID, coloque-o em Configurações e o botão
-              de login oficial aparece aqui. Até lá, use o POESESSID ou o modo demonstração.
+              <strong>Official sign-in (OAuth) is not available yet.</strong> It requires an app registered with GGG, and
+              GGG is currently not accepting new applications. Once you have a Client ID, add it in Settings and the
+              official sign-in button will show up here. Until then, use POESESSID or demo mode.
             </div>
           </div>
         )}
       </div>
-      <div className="disclaimer">
-        Este produto não é afiliado nem endossado pela Grinding Gear Games. Preços: poe.ninja.
-      </div>
+      <div className="disclaimer">This product isn't affiliated with or endorsed by Grinding Gear Games in any way. Prices: poe.ninja.</div>
     </div>
   )
 }

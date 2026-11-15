@@ -64,8 +64,8 @@ export class PoeApi implements StashSource {
       } catch {
         /* sem corpo JSON */
       }
-      if (res.status === 403) msg = 'A GGG negou acesso (escopo ausente). Faça login novamente.'
-      throw new PoeApiError(`API da GGG: ${msg}`, res.status)
+      if (res.status === 403) msg = 'GGG denied access (missing scope). Please sign in again.'
+      throw new PoeApiError(`GGG API: ${msg}`, res.status)
     }
     return (await res.json()) as T
   }
@@ -82,7 +82,7 @@ export class PoeApi implements StashSource {
 
   /** Itens de uma aba, incluindo sub-abas (abas de mapas/únicos são divididas pela GGG). */
   async tabItems(league: string, tab: StashTabInfo): Promise<PoeItem[]> {
-    if (!isStashId(tab.id) || (tab.parentId && !isStashId(tab.parentId))) throw new Error('ID de aba inválido.')
+    if (!isStashId(tab.id) || (tab.parentId && !isStashId(tab.parentId))) throw new Error('Invalid tab ID.')
     const l = encodeURIComponent(league)
     if (tab.parentId) {
       const data = await this.get<{ stash?: PoeStashTab }>('stash', `/stash/${l}/${tab.parentId}/${tab.id}`)

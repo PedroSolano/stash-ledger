@@ -9,11 +9,17 @@ interface Props {
   divine: number | null
   hideBelow: number
   onHideBelowChange: (v: number) => void
+  className?: string
+  /** Layouts largos: a tabela rola dentro do próprio painel, com cabeçalho fixo. */
+  scroll?: boolean
+  /** Quando informado, mostra a coluna "% of total". */
+  totalChaos?: number
 }
 
 const PAGE = 300
+const pct = new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 1 })
 
-export function ItemTable({ items, divine, hideBelow, onHideBelowChange }: Props) {
+export function ItemTable({ items, divine, hideBelow, onHideBelowChange, className = '', scroll, totalChaos }: Props) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'totalChaos', dir: -1 })
@@ -38,19 +44,22 @@ export function ItemTable({ items, divine, hideBelow, onHideBelowChange }: Props
     return filtered.sort((a, b) => {
       const va = key === 'category' ? categoryLabel(a.category) : a[key]
       const vb = key === 'category' ? categoryLabel(b.category) : b[key]
-      if (typeof va === 'string' && typeof vb === 'string') return va.localeCompare(vb, 'pt-BR') * dir
+      if (typeof va === 'string' && typeof vb === 'string') return va.localeCompare(vb, 'en') * dir
       return ((va as number) - (vb as number)) * dir
     })
   }, [items, query, category, sort, hideBelow])
 
   const hidden = items.length - rows.length
   const unpriced = items.filter((i) => !i.category).length
+  const showShare = !!totalChaos && totalChaos > 0
 
   const th = (key: SortKey, label: string, cls = '') => (
     <th
       className={`sortable ${cls}`}
       aria-sort={sort.key === key ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}
-      onClick={() => setSort((s) => ({ key, dir: s.key === key ? ((s.dir * -1) as 1 | -1) : key === 'name' || key === 'category' ? 1 : -1 }))}
+      onClick={() =>
+        setSort((s) => ({ key, dir: s.key === key ? ((s.dir * -1) as 1 | -1) : key === 'name' || key === 'category' ? 1 : -1 }))
+      }
     >
       {label}
       {sort.key === key ? (sort.dir === 1 ? ' ↑' : ' ↓') : ''}
@@ -58,37 +67,37 @@ export function ItemTable({ items, divine, hideBelow, onHideBelowChange }: Props
   )
 
   return (
-    <div className="frame card">
+    <div className={`frame card items-card ${scroll ? 'scroll' : ''} ${className}`}>
       <div className="card-head">
-        <h2>Itens</h2>
+        <h2>Items</h2>
         <span className="sub">
-          {num(rows.length)} de {num(items.length)} grupos
-          {hidden > 0 && !query ? ` · ${num(hidden)} ocultos pelo filtro` : ''}
-          {unpriced > 0 ? ` · ${num(unpriced)} sem preço` : ''}
+          {num(rows.length)} of {num(items.length)} groups
+          {hidden > 0 && !query ? ` · ${num(hidden)} hidden by filter` : ''}
+          {unpriced > 0 ? ` · ${num(unpriced)} without price` : ''}
         </span>
       </div>
       <div className="toolbar">
         <input
           className="input"
           type="search"
-          placeholder="Buscar item, detalhe ou aba…"
+          placeholder="Search item, detail or tab…"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
             setLimit(PAGE)
           }}
         />
-        <select className="select" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Categoria">
-          <option value="">Todas as categorias</option>
+        <select className="select" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
+          <option value="">All categories</option>
           {categories.filter(Boolean).map((c) => (
             <option key={c} value={c}>
               {categoryLabel(c)}
             </option>
           ))}
-          {unpriced > 0 && <option value="__none">Sem preço</option>}
+          {unpriced > 0 && <option value="__none">No price</option>}
         </select>
         <label className="sub" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          Esconder abaixo de
+          Hide below
           <input
             className="input"
             style={{ width: 80 }}
@@ -101,66 +110,87 @@ export function ItemTable({ items, divine, hideBelow, onHideBelowChange }: Props
           chaos
         </label>
       </div>
-      <table className="table">
-        <thead>
-          <tr>
-            {th('name', 'Item')}
-            {th('category', 'Categoria')}
-            <th>Abas</th>
-            {th('quantity', 'Qtd', 'num')}
-            {th('unitChaos', 'Preço un.', 'num')}
-            {th('totalChaos', 'Total', 'num')}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.slice(0, limit).map((i) => (
-            <tr key={i.key}>
-              <td>
-                <div className="item-cell">
-                  {i.icon ? (
-                    <img className="item-icon" src={i.icon} alt="" loading="lazy" referrerPolicy="no-referrer" />
-                  ) : (
-                    <span className="item-icon placeholder" aria-hidden="true" />
-                  )}
-                  <div style={{ minWidth: 0 }}>
-                    <div className={`item-name ${rarityClass(i.frameType)}`}>
-                      {i.name}
-                      {i.approximate && (
-                        <span className="badge" title="Preço aproximado: não havia variante exata no poe.ninja">
-                          ≈
-                        </span>
-                      )}
-                      {i.confidence === 'low' && (
-                        <span className="badge low" title="Poucas amostras no poe.ninja">
-                          baixa confiança
-                        </span>
-                      )}
-                    </div>
-                    {i.detail && <div className="item-detail">{i.detail}</div>}
-                  </div>
-                </div>
-              </td>
-              <td className="sub">{categoryLabel(i.category)}</td>
-              <td className="tabs-cell" title={i.tabs.join(', ')}>
-                {i.tabs.join(', ')}
-              </td>
-              <td className="num">{num(i.quantity)}</td>
-              <td className="num">{i.category ? price(i.unitChaos, divine) : '—'}</td>
-              <td className={`num ${i.counted ? '' : 'not-counted'}`} title={i.counted ? undefined : 'Fora do total (baixa confiança)'}>
-                {i.category ? price(i.totalChaos, divine) : '—'}
-              </td>
+      <div className="table-scroll">
+        <table className="table">
+          <thead>
+            <tr>
+              {th('name', 'Item')}
+              {th('category', 'Category')}
+              <th>Tabs</th>
+              {th('quantity', 'Qty', 'num')}
+              {th('unitChaos', 'Unit price', 'num')}
+              {th('totalChaos', 'Total', 'num')}
+              {showShare && <th className="num">% of total</th>}
             </tr>
-          ))}
-        </tbody>
-      </table>
-      {rows.length > limit && (
-        <div style={{ textAlign: 'center', marginTop: 12 }}>
-          <button className="btn" onClick={() => setLimit((l) => l + PAGE)}>
-            Mostrar mais ({num(rows.length - limit)} restantes)
-          </button>
-        </div>
-      )}
-      {!rows.length && <div className="empty">Nenhum item com esses filtros.</div>}
+          </thead>
+          <tbody>
+            {rows.slice(0, limit).map((i) => (
+              <tr key={i.key}>
+                <td>
+                  <div className="item-cell">
+                    {i.icon ? (
+                      <img className="item-icon" src={i.icon} alt="" loading="lazy" referrerPolicy="no-referrer" />
+                    ) : (
+                      <span className="item-icon placeholder" aria-hidden="true" />
+                    )}
+                    <div style={{ minWidth: 0 }}>
+                      <div className={`item-name ${rarityClass(i.frameType)}`}>
+                        {i.name}
+                        {i.approximate && (
+                          <span className="badge" title="Approximate price: no exact variant on poe.ninja">
+                            ≈
+                          </span>
+                        )}
+                        {i.confidence === 'low' && (
+                          <span className="badge low" title="Few listings on poe.ninja">
+                            low confidence
+                          </span>
+                        )}
+                      </div>
+                      {i.detail && <div className="item-detail">{i.detail}</div>}
+                    </div>
+                  </div>
+                </td>
+                <td className="sub">{categoryLabel(i.category)}</td>
+                <td className="tabs-cell" title={i.tabs.join(', ')}>
+                  {i.tabs.join(', ')}
+                </td>
+                <td className="num">{num(i.quantity)}</td>
+                <td className="num">{i.category ? price(i.unitChaos, divine) : '—'}</td>
+                <td
+                  className={`num ${i.counted ? '' : 'not-counted'}`}
+                  title={i.counted ? undefined : 'Not in total (low confidence)'}
+                >
+                  {i.category ? price(i.totalChaos, divine) : '—'}
+                </td>
+                {showShare && (
+                  <td className="num share-cell">
+                    {i.counted && i.totalChaos > 0 ? (
+                      <>
+                        <span className="share-text">{pct.format(i.totalChaos / totalChaos!)}</span>
+                        <span
+                          className="share-bar"
+                          style={{ width: `${Math.max(2, Math.min(100, (i.totalChaos / totalChaos!) * 100))}%` }}
+                        />
+                      </>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {rows.length > limit && (
+          <div style={{ textAlign: 'center', margin: '12px 0' }}>
+            <button className="btn" onClick={() => setLimit((l) => l + PAGE)}>
+              Show more ({num(rows.length - limit)} left)
+            </button>
+          </div>
+        )}
+        {!rows.length && <div className="empty">No items match these filters.</div>}
+      </div>
     </div>
   )
 }

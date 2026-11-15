@@ -11,7 +11,7 @@ interface Props {
 
 /**
  * Faixa de atualização: mostra o download e, quando a versão nova está pronta, reinicia sozinho
- * depois de uma contagem curta. "Depois" adia; aí a versão nova entra quando o app for fechado.
+ * depois de uma contagem curta. "Later" adia; aí a versão nova entra quando o app for fechado.
  */
 export function UpdateBanner({ update, busy }: Props) {
   const [seconds, setSeconds] = useState(COUNTDOWN_S)
@@ -32,7 +32,7 @@ export function UpdateBanner({ update, busy }: Props) {
     return (
       <div className="update-banner" role="status">
         <span className="update-dot" />
-        Baixando a versão {update.version}… {update.percent}%
+        Downloading version {update.version}… {update.percent}%
         <div className="update-track">
           <div className="update-fill" style={{ width: `${update.percent}%` }} />
         </div>
@@ -46,20 +46,20 @@ export function UpdateBanner({ update, busy }: Props) {
     <div className="update-banner ready" role="alert">
       <span className="update-dot" />
       <span>
-        <strong>Versão {update.version} pronta.</strong>{' '}
+        <strong>Version {update.version} is ready.</strong>{' '}
         {postponed
-          ? 'Ela será instalada quando você fechar o app.'
+          ? 'It will be installed when you close the app.'
           : busy
-            ? 'Reinicio assim que o snapshot terminar.'
-            : `Reiniciando para atualizar em ${seconds} s…`}
+            ? 'Restarting as soon as the snapshot finishes.'
+            : `Restarting to update in ${seconds}s…`}
       </span>
       <span className="spacer" />
       <button className="btn primary" onClick={() => void window.api.installUpdate()}>
-        Atualizar agora
+        Update now
       </button>
       {!postponed && (
         <button className="btn ghost" onClick={() => setPostponed(true)}>
-          Depois
+          Later
         </button>
       )}
     </div>

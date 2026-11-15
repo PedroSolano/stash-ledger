@@ -1,20 +1,21 @@
 import { useState } from 'react'
 import type { AppState, Settings, UpdateState } from '../../../shared/types'
+import { LAYOUT_LABEL, type Layout, type LayoutPref } from '../lib/useLayout'
 
 function updateText(u: UpdateState): string {
   switch (u.status) {
     case 'disabled':
-      return 'atualização automática só no app instalado'
+      return 'auto-update only works in the installed app'
     case 'checking':
-      return 'procurando atualização…'
+      return 'checking for updates…'
     case 'latest':
-      return 'versão mais recente'
+      return 'up to date'
     case 'downloading':
-      return `baixando ${u.version} (${u.percent}%)`
+      return `downloading ${u.version} (${u.percent}%)`
     case 'ready':
-      return `${u.version} pronta para instalar`
+      return `${u.version} ready to install`
     case 'error':
-      return 'não foi possível verificar atualizações'
+      return 'could not check for updates'
     default:
       return ''
   }
@@ -23,12 +24,15 @@ function updateText(u: UpdateState): string {
 interface Props {
   state: AppState
   update: UpdateState
+  layoutPref: LayoutPref
+  detectedLayout: Layout
+  onLayoutPref: (p: LayoutPref) => void
   onClose: () => void
   onSave: (patch: Partial<Settings>) => Promise<void>
   onClearHistory: (() => Promise<void>) | null
 }
 
-export function SettingsModal({ state, update, onClose, onSave, onClearHistory }: Props) {
+export function SettingsModal({ state, update, layoutPref, detectedLayout, onLayoutPref, onClose, onSave, onClearHistory }: Props) {
   const [s, setS] = useState<Settings>(state.settings)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -60,40 +64,62 @@ export function SettingsModal({ state, update, onClose, onSave, onClearHistory }
     <div className="backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="frame modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
         <header>
-          <h2 id="settings-title">Configurações</h2>
-          <button className="btn ghost" onClick={onClose} aria-label="Fechar">
+          <h2 id="settings-title">Settings</h2>
+          <button className="btn ghost" onClick={onClose} aria-label="Close">
             ✕
           </button>
         </header>
         <div className="body">
-          <div className="section-title">Login GGG (OAuth)</div>
+          <div className="section-title">Display</div>
+          <div className="field">
+            <label htmlFor="layout">Layout</label>
+            <select
+              id="layout"
+              className="select"
+              value={layoutPref}
+              onChange={(e) => onLayoutPref(e.target.value as LayoutPref)}
+            >
+              <option value="auto">Automatic (detected: {LAYOUT_LABEL[detectedLayout]})</option>
+              {(Object.keys(LAYOUT_LABEL) as Layout[]).map((l) => (
+                <option key={l} value={l}>
+                  {LAYOUT_LABEL[l]}
+                </option>
+              ))}
+            </select>
+            <span className="hint">
+              Automatic picks the layout from your window size and aspect ratio: ultrawide monitors (21:9, 32:9) get three
+              columns. Applies right away.
+            </span>
+          </div>
+
+          <div className="section-title">GGG sign-in (OAuth)</div>
           <div className="field">
             <label htmlFor="cid">Client ID</label>
             <input id="cid" className="input" value={s.clientId} onChange={(e) => set('clientId', e.target.value)} />
             <span className="hint">
-              ID do seu app registrado na GGG como cliente público. Não existe segredo: o login usa PKCE.{' '}
+              Your app's ID, registered with GGG as a public client. There is no secret: sign-in uses PKCE.{' '}
               <a href="https://www.pathofexile.com/developer/docs" target="_blank" rel="noreferrer">
-                Documentação da GGG
+                GGG developer docs
               </a>
             </span>
           </div>
           <div className="field">
             <label htmlFor="ruri">Redirect URI</label>
             <input id="ruri" className="input" value={s.redirectUri} onChange={(e) => set('redirectUri', e.target.value)} />
-            <span className="hint">Precisa ser idêntica à registrada e local, por exemplo http://127.0.0.1:8080/callback</span>
+            <span className="hint">Must match the registered one exactly and be local, e.g. http://127.0.0.1:8080/callback</span>
           </div>
           <div className="field">
-            <label htmlFor="contact">Contato do User-Agent</label>
+            <label htmlFor="contact">User-Agent contact</label>
             <input id="contact" className="input" value={s.contact} onChange={(e) => set('contact', e.target.value)} />
-            <span className="hint">A GGG exige um contato (e-mail ou URL) no User-Agent das requisições.</span>
+            <span className="hint">GGG requires a contact (email or URL) in the User-Agent of API requests.</span>
           </div>
 
-          <div className="section-title">Preços</div>
+          <div className="section-title">Pricing</div>
           <label className="check">
             <input type="checkbox" checked={s.priceBaseTypes} onChange={(e) => set('priceBaseTypes', e.target.checked)} />
             <span>
-              Precificar bases ilvl 82+
-              <div className="sub">Itens normais/mágicos/raros recebem o preço da base (com influência) do poe.ninja.</div>
+              Price ilvl 82+ bases
+              <div className="sub">Normal, magic and rare items get the poe.ninja base type price (including influence).</div>
             </span>
           </label>
           <label className="check">
@@ -103,55 +129,55 @@ export function SettingsModal({ state, update, onClose, onSave, onClearHistory }
               onChange={(e) => set('includeLowConfidence', e.target.checked)}
             />
             <span>
-              Somar preços de baixa confiança
-              <div className="sub">Itens com menos de 5 amostras no poe.ninja aparecem na tabela, mas ficam fora do total.</div>
+              Include low-confidence prices in totals
+              <div className="sub">Items with fewer than 5 listings on poe.ninja show in the table but are left out of the total.</div>
             </span>
           </label>
           <div className="field">
-            <label htmlFor="ninja">Servidor de preços</label>
+            <label htmlFor="ninja">Price server</label>
             <input id="ninja" className="input" value={s.ninjaBaseUrl} onChange={(e) => set('ninjaBaseUrl', e.target.value)} />
             <span className="hint">
-              Padrão: https://poe.ninja. O poe.ninja recomenda que apps desktop usem um proxy com cache; se você tiver um,
-              coloque o endereço aqui.
+              Default: https://poe.ninja. poe.ninja recommends desktop apps go through a caching proxy; if you have one,
+              put its address here.
             </span>
           </div>
 
           <div className="section-title">Snapshots</div>
           <div className="field">
-            <label htmlFor="auto">Snapshot automático</label>
+            <label htmlFor="auto">Automatic snapshot</label>
             <select
               id="auto"
               className="select"
               value={s.autoSnapshotMinutes}
               onChange={(e) => set('autoSnapshotMinutes', Number(e.target.value))}
             >
-              <option value={0}>Desligado</option>
-              <option value={5}>A cada 5 minutos</option>
-              <option value={10}>A cada 10 minutos</option>
-              <option value={15}>A cada 15 minutos</option>
-              <option value={30}>A cada 30 minutos</option>
-              <option value={60}>A cada hora</option>
+              <option value={0}>Off</option>
+              <option value={5}>Every 5 minutes</option>
+              <option value={10}>Every 10 minutes</option>
+              <option value={15}>Every 15 minutes</option>
+              <option value={30}>Every 30 minutes</option>
+              <option value={60}>Every hour</option>
             </select>
-            <span className="hint">Respeita os limites de requisição da GGG: se precisar, espera antes de buscar as abas.</span>
+            <span className="hint">Respects GGG rate limits: if needed, it waits before fetching your tabs.</span>
           </div>
           {onClearHistory && (
             <button
               className="btn"
               onClick={async () => {
-                if (window.confirm('Apagar todo o histórico de snapshots desta liga? Não dá para desfazer.')) {
+                if (window.confirm("Delete all snapshot history for this league? This can't be undone.")) {
                   await onClearHistory()
                 }
               }}
             >
-              Apagar histórico desta liga
+              Clear this league's history
             </button>
           )}
           <button className="btn" style={{ marginLeft: onClearHistory ? 10 : 0 }} onClick={() => void window.api.openLog()}>
-            Abrir log de erros
+            Open error log
           </button>
           {!state.secureStorage && (
             <div className="banner" style={{ marginTop: 16 }}>
-              O sistema não oferece armazenamento criptografado: o login não será lembrado entre sessões.
+              Your system has no encrypted storage available: your sign-in won't be remembered between sessions.
             </div>
           )}
           {error && (
@@ -167,15 +193,15 @@ export function SettingsModal({ state, update, onClose, onSave, onClearHistory }
           </span>
           {(update.status === 'latest' || update.status === 'error') && (
             <button className="btn ghost" onClick={() => void window.api.checkUpdate()}>
-              Procurar atualização
+              Check for updates
             </button>
           )}
           <span className="spacer" />
           <button className="btn ghost" onClick={onClose}>
-            Cancelar
+            Cancel
           </button>
           <button className="btn primary" onClick={save} disabled={saving}>
-            Salvar
+            Save
           </button>
         </footer>
       </div>

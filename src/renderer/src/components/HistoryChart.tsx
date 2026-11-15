@@ -10,9 +10,10 @@ interface Props {
   points: Point[]
   unit: string
   digits: number
+  height?: number
+  fill?: boolean
 }
 
-const HEIGHT = 230
 const PAD = { top: 16, right: 64, bottom: 26, left: 52 }
 
 /** Escala "bonita" para o eixo Y (1, 2, 2.5, 5 × 10^n). */
@@ -46,15 +47,21 @@ function timeTicks(t0: number, t1: number, width: number, multiDay: boolean): { 
 }
 
 /** Patrimônio ao longo do tempo: linha única, crosshair com tooltip e rótulo no último ponto. */
-export function HistoryChart({ points, unit, digits }: Props) {
+export function HistoryChart({ points, unit, digits, height = 230, fill = false }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(700)
+  const [boxHeight, setBoxHeight] = useState(0)
   const [hover, setHover] = useState<number | null>(null)
+  // fill: ocupa toda a altura do painel (layout ultrawide); senão usa a altura fixa.
+  const HEIGHT = fill && boxHeight ? Math.max(220, Math.floor(boxHeight)) : height
 
   useEffect(() => {
     const el = wrapRef.current
     if (!el) return
-    const ro = new ResizeObserver(([entry]) => setWidth(Math.max(320, entry.contentRect.width)))
+    const ro = new ResizeObserver(([entry]) => {
+      setWidth(Math.max(320, entry.contentRect.width))
+      setBoxHeight(entry.contentRect.height)
+    })
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
@@ -74,12 +81,14 @@ export function HistoryChart({ points, unit, digits }: Props) {
     const path = points.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join('')
     const multiDay = t1 - t0 > 36 * 3600 * 1000
     return { t0, t1, ticks, x, y, path, multiDay, iw, ih }
-  }, [points, width])
+  }, [points, width, HEIGHT])
+
+  const wrapClass = `chart-wrap ${fill ? 'fill' : ''}`
 
   if (!geo) {
     return (
-      <div ref={wrapRef} className="chart-wrap">
-        <div className="empty">Tire pelo menos dois snapshots para ver o histórico.</div>
+      <div ref={wrapRef} className={wrapClass}>
+        <div className="empty">Take at least two snapshots to see your history.</div>
       </div>
     )
   }
@@ -111,12 +120,12 @@ export function HistoryChart({ points, unit, digits }: Props) {
   }
 
   return (
-    <div ref={wrapRef} className="chart-wrap">
+    <div ref={wrapRef} className={wrapClass}>
       <svg
         height={HEIGHT}
         viewBox={`0 0 ${width} ${HEIGHT}`}
         role="img"
-        aria-label={`Patrimônio em ${unit}: ${num(last.v, digits)} no último snapshot`}
+        aria-label={`Net worth in ${unit}: ${num(last.v, digits)} at the last snapshot`}
         tabIndex={0}
         onPointerMove={onMove}
         onPointerLeave={() => setHover(null)}

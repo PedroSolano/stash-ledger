@@ -1,7 +1,9 @@
-const nf0 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
-const nf1 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
-const nf2 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 })
-const compact = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 })
+// Interface em inglês (é como o jogo é jogado), com números e datas no formato en-US.
+const LOCALE = 'en-US'
+const nf0 = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 })
+const nf1 = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 })
+const nf2 = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 })
+const compact = new Intl.NumberFormat(LOCALE, { notation: 'compact', maximumFractionDigits: 1 })
 
 export function num(n: number, digits = 0): string {
   if (digits === 0) return nf0.format(n)
@@ -27,84 +29,78 @@ export function chaosText(chaos: number): string {
   return `${Math.abs(chaos) >= 100 ? num(chaos) : num(chaos, 1)} c`
 }
 
-export function signed(text: string, value: number): string {
-  if (value > 0) return `+${text}`
-  if (value < 0) return `−${text.replace(/^-/, '')}`
-  return text
-}
-
 export function ago(ts: number | null | undefined): string {
-  if (!ts) return 'nunca'
+  if (!ts) return 'never'
   const s = Math.round((Date.now() - ts) / 1000)
-  if (s < 60) return 'agora'
+  if (s < 60) return 'just now'
   const m = Math.round(s / 60)
-  if (m < 60) return `há ${m} min`
+  if (m < 60) return `${m} min ago`
   const h = Math.round(m / 60)
-  if (h < 48) return `há ${h} h`
-  return `há ${Math.round(h / 24)} dias`
+  if (h < 48) return `${h} h ago`
+  return `${Math.round(h / 24)} days ago`
 }
 
-const dt = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
-const tm = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })
-const dm = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' })
+const dt = new Intl.DateTimeFormat(LOCALE, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+const tm = new Intl.DateTimeFormat(LOCALE, { hour: '2-digit', minute: '2-digit' })
+const dm = new Intl.DateTimeFormat(LOCALE, { month: 'short', day: 'numeric' })
 
 export const fmtDateTime = (t: number): string => dt.format(t)
 export const fmtTime = (t: number): string => tm.format(t)
 export const fmtDay = (t: number): string => dm.format(t)
 
 export const CATEGORY_LABEL: Record<string, string> = {
-  Currency: 'Moedas',
-  Fragment: 'Fragmentos',
+  Currency: 'Currency',
+  Fragment: 'Fragments',
   Runegraft: 'Runegrafts',
-  AllflameEmber: 'Brasas',
-  Tattoo: 'Tatuagens',
-  Omen: 'Presságios',
-  DjinnCoin: 'Moedas de Djinn',
-  Ducat: 'Ducados',
-  EnshroudingCrystal: 'Cristais',
-  DivinationCard: 'Cartas',
-  Artifact: 'Artefatos',
-  Oil: 'Óleos',
-  DeliriumOrb: 'Orbes de Delírio',
-  Scarab: 'Escaravelhos',
-  Astrolabe: 'Astrolábios',
-  Thread: 'Fios',
-  Fossil: 'Fósseis',
-  Resonator: 'Ressonadores',
-  Essence: 'Essências',
+  AllflameEmber: 'Allflame Embers',
+  Tattoo: 'Tattoos',
+  Omen: 'Omens',
+  DjinnCoin: 'Djinn Coins',
+  Ducat: 'Ducats',
+  EnshroudingCrystal: 'Enshrouding Crystals',
+  DivinationCard: 'Divination Cards',
+  Artifact: 'Artifacts',
+  Oil: 'Oils',
+  DeliriumOrb: 'Delirium Orbs',
+  Scarab: 'Scarabs',
+  Astrolabe: 'Astrolabes',
+  Thread: 'Threads',
+  Fossil: 'Fossils',
+  Resonator: 'Resonators',
+  Essence: 'Essences',
   Wombgift: 'Wombgifts',
-  Corpse: 'Cadáveres',
-  Viscera: 'Vísceras',
-  Incubator: 'Incubadoras',
-  UniqueWeapon: 'Armas únicas',
-  UniqueArmour: 'Armaduras únicas',
-  UniqueAccessory: 'Acessórios únicos',
-  UniqueFlask: 'Frascos únicos',
-  UniqueJewel: 'Joias únicas',
-  ForbiddenJewel: 'Joias proibidas',
-  ShrineBelt: 'Cintos de santuário',
-  UniqueTincture: 'Tinturas únicas',
-  UniqueRelic: 'Relíquias',
-  SkillGem: 'Gemas',
-  ImbuedGem: 'Gemas imbuídas',
-  ClusterJewel: 'Cluster jewels',
-  Map: 'Mapas',
-  BlightedMap: 'Mapas blighted',
-  BlightRavagedMap: 'Mapas blight-ravaged',
-  UniqueMap: 'Mapas únicos',
-  ValdoMap: 'Mapas de Valdo',
-  Invitation: 'Convites',
-  Memory: 'Memórias',
-  IncursionTemple: 'Templos',
-  ScryingOrb: 'Orbes de vidência',
-  BaseType: 'Bases',
-  Flask: 'Frascos',
-  Beast: 'Bestas',
-  Vial: 'Frascos de Vaal'
+  Corpse: 'Corpses',
+  Viscera: 'Viscera',
+  Incubator: 'Incubators',
+  UniqueWeapon: 'Unique Weapons',
+  UniqueArmour: 'Unique Armours',
+  UniqueAccessory: 'Unique Accessories',
+  UniqueFlask: 'Unique Flasks',
+  UniqueJewel: 'Unique Jewels',
+  ForbiddenJewel: 'Forbidden Jewels',
+  ShrineBelt: 'Shrine Belts',
+  UniqueTincture: 'Unique Tinctures',
+  UniqueRelic: 'Unique Relics',
+  SkillGem: 'Skill Gems',
+  ImbuedGem: 'Imbued Gems',
+  ClusterJewel: 'Cluster Jewels',
+  Map: 'Maps',
+  BlightedMap: 'Blighted Maps',
+  BlightRavagedMap: 'Blight-ravaged Maps',
+  UniqueMap: 'Unique Maps',
+  ValdoMap: 'Valdo Maps',
+  Invitation: 'Invitations',
+  Memory: 'Memories',
+  IncursionTemple: 'Temples',
+  ScryingOrb: 'Scrying Orbs',
+  BaseType: 'Base Types',
+  Flask: 'Flasks',
+  Beast: 'Beasts',
+  Vial: 'Vials'
 }
 
 export function categoryLabel(c?: string): string {
-  if (!c) return 'Sem preço'
+  if (!c) return 'No price'
   return CATEGORY_LABEL[c] ?? c
 }
 

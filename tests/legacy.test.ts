@@ -123,7 +123,7 @@ describe('LegacyApi', () => {
 
   it('stash inexistente na liga não é confundida com sessão inválida', async () => {
     const api = new LegacyApi(() => creds, () => 'ua', undefined, fakeFetch(() => json({ error: { code: 1, message: 'Resource not found' } }, 404)))
-    await expect(api.listTabs('Covens')).rejects.toThrow(/não encontrada/)
+    await expect(api.listTabs('Covens')).rejects.toThrow(/not found/)
   })
 
   it('sem credenciais não faz requisição nenhuma', async () => {

@@ -6,17 +6,18 @@ import { TabPicker } from './components/TabPicker'
 import { UpdateBanner } from './components/UpdateBanner'
 import { Welcome } from './components/Welcome'
 import { ago } from './lib/format'
+import { useLayout } from './lib/useLayout'
 
 const api = window.api
 
 function progressText(p: ProgressEvent): string | null {
   switch (p.kind) {
     case 'prices':
-      return p.done < p.total ? `Atualizando preços do poe.ninja… ${p.done}/${p.total}` : null
+      return p.done < p.total ? `Updating poe.ninja prices… ${p.done}/${p.total}` : null
     case 'tabs':
-      return p.done < p.total ? `Buscando abas ${p.done + 1}/${p.total}${p.tabName ? ` · ${p.tabName}` : ''}` : null
+      return p.done < p.total ? `Fetching tabs ${p.done + 1}/${p.total}${p.tabName ? ` · ${p.tabName}` : ''}` : null
     case 'ratelimit':
-      return `Aguardando o limite de requisições da GGG (${Math.ceil(p.waitMs / 1000)} s)…`
+      return `Waiting for GGG rate limit (${Math.ceil(p.waitMs / 1000)} s)…`
     default:
       return null
   }
@@ -34,8 +35,10 @@ export function App() {
   const [update, setUpdate] = useState<UpdateState>({ status: 'idle' })
   const [, setTick] = useState(0)
   const autoOpened = useRef(false)
+  const { layout, detected, pref: layoutPref, setPref: setLayoutPref } = useLayout()
 
-  const fail = (e: unknown): void => setError((e as Error)?.message?.replace(/^Error invoking remote method '[^']+': (Error: )?/, '') ?? String(e))
+  const fail = (e: unknown): void =>
+    setError((e as Error)?.message?.replace(/^Error invoking remote method '[^']+': (Error: )?/, '') ?? String(e))
 
   useEffect(() => {
     api.getState().then(setState).catch(fail)
@@ -131,6 +134,9 @@ export function App() {
         <SettingsModal
           state={state}
           update={update}
+          layoutPref={layoutPref}
+          detectedLayout={detected}
+          onLayoutPref={setLayoutPref}
           onClose={() => setModal(null)}
           onSave={saveSettings}
           onClearHistory={
@@ -194,7 +200,7 @@ export function App() {
         </div>
         <select
           className="select"
-          aria-label="Liga"
+          aria-label="League"
           value={league ?? ''}
           onChange={async (e) => setState(await api.selectLeague(e.target.value))}
         >
@@ -206,22 +212,25 @@ export function App() {
           ))}
         </select>
         <button className="btn" onClick={() => setModal('tabs')}>
-          Abas ({selected.length})
+          Tabs ({selected.length})
         </button>
         <button className="btn primary" onClick={snapshot} disabled={busy === 'snapshot' || !selected.length}>
-          {busy === 'snapshot' ? 'Atualizando…' : 'Atualizar agora'}
+          {busy === 'snapshot' ? 'Refreshing…' : 'Refresh now'}
         </button>
         <span className="spacer" />
         {state.demo ? (
-          <span className="pill demo">Modo demonstração</span>
+          <span className="pill demo">Demo mode</span>
         ) : (
-          <span className="pill" title={state.auth.method === 'session' ? 'Conectado via POESESSID (endpoint antigo do site)' : 'Conectado via OAuth oficial'}>
+          <span
+            className="pill"
+            title={state.auth.method === 'session' ? 'Connected via POESESSID (legacy website endpoint)' : 'Connected via official OAuth'}
+          >
             {state.auth.username}
-            {state.auth.method === 'session' ? ' · sessão' : ''}
+            {state.auth.method === 'session' ? ' · session' : ''}
           </span>
         )}
-        <button className="btn ghost" onClick={() => setModal('settings')} aria-label="Configurações">
-          ⚙ Configurações
+        <button className="btn ghost" onClick={() => setModal('settings')} aria-label="Settings">
+          ⚙ Settings
         </button>
         <button
           className="btn ghost"
@@ -231,7 +240,7 @@ export function App() {
             setState(state.demo ? await api.stopDemo() : await api.logout())
           }}
         >
-          {state.demo ? 'Sair da demonstração' : 'Sair'}
+          {state.demo ? 'Exit demo' : 'Log out'}
         </button>
       </div>
       <div className="statusbar" aria-live="polite">
@@ -239,19 +248,19 @@ export function App() {
           <span className="progress">{status}</span>
         ) : (
           <span>
-            {latest ? `Último snapshot ${ago(latest.takenAt)}` : 'Sem snapshots nesta liga'}
-            {state.settings.autoSnapshotMinutes ? ` · automático a cada ${state.settings.autoSnapshotMinutes} min` : ''}
+            {latest ? `Last snapshot ${ago(latest.takenAt)}` : 'No snapshots in this league'}
+            {state.settings.autoSnapshotMinutes ? ` · auto every ${state.settings.autoSnapshotMinutes} min` : ''}
           </span>
         )}
       </div>
       <div className="content">
-        <div className="dashboard">
+        <div className={`dash-wrap layout-${layout}`}>
           {error && (
             <div className="banner" role="alert">
               <span>{error}</span>
               <span className="spacer" />
               <button className="btn ghost" onClick={() => setError(null)}>
-                Fechar
+                Dismiss
               </button>
             </div>
           )}
@@ -260,9 +269,10 @@ export function App() {
             history={history}
             hideBelow={state.settings.hideBelowChaos}
             onHideBelowChange={(v) => void saveSettings({ hideBelowChaos: v })}
+            layout={layout}
           />
         </div>
-        <div className="disclaimer">Este produto não é afiliado nem endossado pela Grinding Gear Games. Preços: poe.ninja.</div>
+        <div className="disclaimer">This product isn't affiliated with or endorsed by Grinding Gear Games in any way. Prices: poe.ninja.</div>
       </div>
       {modals}
     </div>

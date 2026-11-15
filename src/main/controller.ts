@@ -135,7 +135,7 @@ export class AppController {
     } catch (err) {
       // Conta sem stash nesta liga ainda prova que a sessão é válida; só 401/403 reprovam.
       if (err instanceof SessionInvalidError) throw err
-      if (!/não encontrada/.test((err as Error).message)) throw err
+      if (!/stash not found/i.test((err as Error).message)) throw err
     }
     await this.auth.logout()
     await this.session.set(creds)
@@ -218,7 +218,7 @@ export class AppController {
   }
 
   async selectLeague(league: string): Promise<AppState> {
-    if (typeof league !== 'string' || !league || league.length > 100) throw new Error('Liga inválida.')
+    if (typeof league !== 'string' || !league || league.length > 100) throw new Error('Invalid league.')
     await this.settings.set({ ...this.settings.get(), league })
     return this.state()
   }
@@ -240,7 +240,7 @@ export class AppController {
 
   async refreshPrices(force: boolean): Promise<PriceStatus> {
     const league = this.settings.get().league
-    if (!league) throw new Error('Escolha uma liga primeiro.')
+    if (!league) throw new Error('Pick a league first.')
     const { index, status } = await this.ninja.get(league, force)
     this.deps.emitProgress({ kind: 'idle' })
     return { ...status, divineChaos: index.divineChaos || null }
@@ -274,22 +274,22 @@ export class AppController {
   }
 
   private async doSnapshot(): Promise<SnapshotDetail> {
-    if (!this.active()) throw new Error('Entre com sua conta ou use o modo demonstração.')
+    if (!this.active()) throw new Error('Sign in or use demo mode first.')
     const s = this.settings.get()
     const league = s.league
-    if (!league) throw new Error('Escolha uma liga primeiro.')
+    if (!league) throw new Error('Pick a league first.')
     const selected = s.selectedTabs[this.selectionKey(league)] ?? []
-    if (!selected.length) throw new Error('Selecione ao menos uma aba da stash.')
+    if (!selected.length) throw new Error('Select at least one stash tab.')
 
     const { index, status } = await this.ninja.get(league)
-    if (!index.size) throw new Error('Não foi possível carregar preços do poe.ninja para essa liga.')
+    if (!index.size) throw new Error('Could not load poe.ninja prices for this league.')
 
     // No modo sessão as requisições usam a posição da aba, que muda se você reordenar no jogo:
     // relista a cada snapshot (1 requisição) para não ler a aba errada.
     if (this.method() === 'session') this.tabsCache.delete(league)
     const allTabs = await this.listTabs(league)
     const tabs = allTabs.filter((t) => selected.includes(t.id))
-    if (!tabs.length) throw new Error('As abas selecionadas não existem mais nesta liga. Escolha as abas de novo.')
+    if (!tabs.length) throw new Error('The selected tabs no longer exist in this league. Pick your tabs again.')
     const tabItems: TabItems[] = []
     this.demoSeed = Math.floor(Date.now() / 1000) % 100000
     const source = this.source()

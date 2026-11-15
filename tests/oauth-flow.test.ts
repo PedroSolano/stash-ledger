@@ -61,7 +61,7 @@ describe('OAuthFlow (fluxo completo simulado)', () => {
           setTimeout(() => void fetch(`${redirectUri}?code=evil&state=forjado`).catch(() => undefined), 10)
         }
       })
-    ).rejects.toThrow(/state inválido/)
+    ).rejects.toThrow(/invalid state/)
   })
 
   it('pode ser cancelado pelo usuário', async () => {
@@ -75,6 +75,6 @@ describe('OAuthFlow (fluxo completo simulado)', () => {
         setTimeout(() => flow.cancel(), 10)
       }
     })
-    await expect(p).rejects.toThrow(/cancelado/)
+    await expect(p).rejects.toThrow(/cancelled/)
   })
 })

@@ -243,7 +243,7 @@ function priceUnique(item: PoeItem, idx: PriceIndex, opts: PricingOptions): Pric
   if (!item.identified || !item.name) {
     const byBase = idx.uniqueByBase.get(norm(item.baseType))?.filter((c) => !c.links)
     if (!byBase?.length) return null
-    return toMatch(cheapest(byBase), opts, true, 'não identificado')
+    return toMatch(cheapest(byBase), opts, true, 'unidentified')
   }
 
   const foulborn = !!item.mutated || (item.mutatedMods?.length ?? 0) > 0
@@ -323,7 +323,7 @@ function priceCluster(item: PoeItem, idx: PriceIndex, opts: PricingOptions): Pri
   if (!byLevel.length) return null
   const sameClass = byLevel.filter((c) => c.itemClass === item.frameType)
   const e = sameClass.length ? mostListed(sameClass) : cheapest(byLevel)
-  return toMatch(e, opts, !sameClass.length, `${passives} passivas · ilvl ${item.ilvl}`)
+  return toMatch(e, opts, !sameClass.length, `${passives} passives · ilvl ${item.ilvl}`)
 }
 
 function priceLeveled(
