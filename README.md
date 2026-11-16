@@ -11,6 +11,7 @@ See what your Path of Exile stash is worth, priced with **every category on poe.
 - **History chart** of your net worth (6h, 24h, 7 days or all time).
 - **Per-tab breakdown** and a searchable, sortable item table.
 - **Automatic snapshots** every 5 to 60 minutes.
+- **Drop alerts**: a siren pops up over the game, with sound, when a valuable item lands in your stash (1 divine or more by default).
 - **Fits your screen**: the layout adapts to your window size, with a three-column view for ultrawide monitors.
 - **Light**: a few MB to download and install, low memory use, and a price cache of a couple hundred KB.
 - **Updates itself**: new versions download and install automatically, and every update is cryptographically signed.
@@ -60,6 +61,16 @@ Markers in the item table:
 - **≈** Approximate price: poe.ninja had no exact match for that variant, so the app used the closest conservative one.
 - **low confidence**: fewer than 5 listings on poe.ninja. The item is shown but left out of your total, unless you enable *Include low-confidence prices in totals* in Settings.
 - **No price**: poe.ninja doesn't price that item (most rares, for example).
+
+### Drop alerts
+
+When a snapshot finds a new item worth **1 divine or more**, a siren shows up in the top-left corner of your screen for a few seconds, with the siren sound, the item's name and its value. It sits on top of the game and doesn't take focus or block clicks.
+
+- Change the minimum value, turn the sound off or disable alerts in **Settings → Drop alerts**. **Test alert** shows what it looks like.
+- Alerts come from snapshots, so turn on **automatic snapshots** (every 5 minutes works well) to get them while you play.
+- For stacks, only what was added counts: going from 12 to 14 divines alerts for 2 divines.
+- No alert on your first snapshot of a league or for tabs you just started tracking.
+- It shows over the game in **windowed** or **windowed fullscreen** mode, not in exclusive fullscreen.
 
 Prices come from a small compressed cache on your computer. While the app is open, it refreshes that cache from poe.ninja on a schedule (every 30 minutes by default, adjustable in Settings) and only downloads categories that actually changed. Values are shown in chaos and divines, using poe.ninja's current divine rate.
 

@@ -29,7 +29,8 @@ export const tauriPlatform: Platform = {
   ninjaStatus: (league) => call('ninja_status', { league }),
   ninjaRefresh: (league, force) => call('ninja_refresh', { league, force }),
   ninjaPrices: (league) => call('ninja_prices', { league }),
-  logError: (context, message, extra) => call('log_error', { context, message, extra: extra ?? null })
+  logError: (context, message, extra) => call('log_error', { context, message, extra: extra ?? null }),
+  showAlert: (alert) => call('overlay_alert', { alert })
 }
 
 export const openExternal = (url: string): Promise<void> => call('open_external', { url })

@@ -14,7 +14,10 @@ export function defaultSettings(env: Record<string, string | undefined> = {}): S
     includeLowConfidence: false,
     priceBaseTypes: true,
     hideBelowChaos: 1,
-    priceRefreshMinutes: 30
+    priceRefreshMinutes: 30,
+    alertsEnabled: true,
+    alertThresholdDiv: 1,
+    alertSound: true
   }
 }
 
@@ -57,6 +60,12 @@ export function sanitizeSettings(patch: Partial<Settings>, current: Settings): S
     const n = Math.round(Number(patch.priceRefreshMinutes))
     // poe.ninja atualiza a cada ~15 min: menos que isso só gasta rede sem trazer nada novo.
     next.priceRefreshMinutes = Math.min(240, Math.max(15, Number.isFinite(n) ? n : 30))
+  }
+  if (patch.alertsEnabled !== undefined) next.alertsEnabled = !!patch.alertsEnabled
+  if (patch.alertSound !== undefined) next.alertSound = !!patch.alertSound
+  if (patch.alertThresholdDiv !== undefined) {
+    const n = Number(patch.alertThresholdDiv)
+    next.alertThresholdDiv = Number.isFinite(n) ? Math.min(100000, Math.max(0.05, Math.round(n * 100) / 100)) : 1
   }
   return next
 }

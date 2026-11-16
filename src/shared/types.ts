@@ -146,6 +146,31 @@ export interface Settings {
   hideBelowChaos: number
   /** De quanto em quanto tempo (min) o cache local de preços é atualizado a partir do poe.ninja. */
   priceRefreshMinutes: number
+  /** Sirene no canto da tela quando um item caro entra na stash. */
+  alertsEnabled: boolean
+  /** Preço unitário mínimo (em divines) para disparar a sirene. */
+  alertThresholdDiv: number
+  /** Tocar o som da sirene junto com o overlay. */
+  alertSound: boolean
+}
+
+export interface DropAlertItem {
+  name: string
+  detail?: string
+  icon: string
+  frameType: number
+  quantity: number
+  unitChaos: number
+  totalChaos: number
+}
+
+/** Conteúdo do overlay de alerta. */
+export interface DropAlert {
+  items: DropAlertItem[]
+  totalChaos: number
+  divineChaos: number
+  sound: boolean
+  test?: boolean
 }
 
 export interface AuthStatus {
@@ -214,6 +239,8 @@ export interface StashLedgerApi {
   onSnapshot(cb: (snap: SnapshotDetail) => void): () => void
   /** Mostra o arquivo de log de erros no Explorer. */
   openLog(): Promise<void>
+  /** Dispara o overlay de alerta com um item de exemplo. */
+  testAlert(): Promise<void>
   getUpdate(): Promise<UpdateState>
   checkUpdate(): Promise<void>
   installUpdate(): Promise<void>

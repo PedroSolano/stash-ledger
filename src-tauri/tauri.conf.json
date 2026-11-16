@@ -19,7 +19,7 @@
         "minWidth": 980,
         "minHeight": 620,
         "center": true,
-        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-gpu"
+        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-gpu --autoplay-policy=no-user-gesture-required"
       }
     ],
     "security": {

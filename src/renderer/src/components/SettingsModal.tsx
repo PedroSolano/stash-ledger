@@ -51,7 +51,10 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
         includeLowConfidence: s.includeLowConfidence,
         priceBaseTypes: s.priceBaseTypes,
         hideBelowChaos: s.hideBelowChaos,
-        priceRefreshMinutes: s.priceRefreshMinutes
+        priceRefreshMinutes: s.priceRefreshMinutes,
+        alertsEnabled: s.alertsEnabled,
+        alertThresholdDiv: s.alertThresholdDiv,
+        alertSound: s.alertSound
       })
       onClose()
     } catch (e) {
@@ -179,6 +182,59 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
             </select>
             <span className="hint">Respects GGG rate limits: if needed, it waits before fetching your tabs.</span>
           </div>
+
+          <div className="section-title">Drop alerts</div>
+          <label className="check">
+            <input type="checkbox" checked={s.alertsEnabled} onChange={(e) => set('alertsEnabled', e.target.checked)} />
+            <span>
+              Siren on valuable drops
+              <div className="sub">
+                When a snapshot finds a new item worth at least the value below, a siren pops up in the top-left corner of
+                your screen, over the game, with the item and its price.
+              </div>
+            </span>
+          </label>
+          <div className="field">
+            <label htmlFor="alert-min">Minimum value (divine)</label>
+            <input
+              id="alert-min"
+              className="input"
+              type="number"
+              min={0.05}
+              step={0.1}
+              value={s.alertThresholdDiv}
+              disabled={!s.alertsEnabled}
+              onChange={(e) => set('alertThresholdDiv', Number(e.target.value))}
+            />
+            <span className="hint">
+              Per item, using the current divine price. Stacks count only what was added (2 new divines = 2 div). Items are
+              detected on each snapshot, so pair this with an automatic snapshot (every 5 minutes is a good fit). Shows over
+              windowed or borderless fullscreen, not exclusive fullscreen.
+            </span>
+          </div>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={s.alertSound}
+              disabled={!s.alertsEnabled}
+              onChange={(e) => set('alertSound', e.target.checked)}
+            />
+            <span>Play siren sound</span>
+          </label>
+          <button
+            className="btn"
+            style={{ marginBottom: 6 }}
+            onClick={() =>
+              void window.api
+                .updateSettings({ alertSound: s.alertSound })
+                .then(() => window.api.testAlert())
+                .catch((e: Error) => setError(e.message))
+            }
+          >
+            Test alert
+          </button>
+
+          <div className="section-title">Maintenance</div>
           {onClearHistory && (
             <button
               className="btn"

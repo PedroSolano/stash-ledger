@@ -1,6 +1,7 @@
 import type {
   AppState,
   AuthStatus,
+  DropAlert,
   PoeItem,
   PriceStatus,
   ProgressEvent,
@@ -9,6 +10,7 @@ import type {
   SnapshotSummary,
   StashTabInfo
 } from '../shared/types'
+import { buildAlert, detectDrops } from './alerts'
 import { DEMO_TABS, demoItems } from './demo/fixtures'
 import type { CompactPrices } from './pricing/ninja'
 import { PriceIndex } from './pricing/priceIndex'
@@ -45,6 +47,8 @@ export interface Platform {
   ninjaRefresh(league: string, force: boolean): Promise<NinjaStatus>
   ninjaPrices(league: string): Promise<CompactPrices | null>
   logError(context: string, message: string, extra?: Record<string, unknown>): Promise<void>
+  /** Abre o overlay de alerta no canto superior esquerdo da tela, sem tirar o foco do jogo. */
+  showAlert(alert: DropAlert): Promise<void>
 }
 
 export interface ControllerEvents {
@@ -276,6 +280,18 @@ export class Controller {
     return this.p.storeGet<SnapshotDetail>(this.latestName(league))
   }
 
+  /** Overlay de teste: o item mais valioso do último snapshot (ou um exemplo, se ainda não houver). */
+  async testAlert(): Promise<void> {
+    const league = this.settings.league
+    const latest = league ? await this.getLatest(league).catch(() => null) : null
+    const top = latest?.items.find((i) => i.counted && i.unitChaos > 0)
+    const divine = latest?.divineChaos || 140
+    const item = top
+      ? { name: top.name, detail: top.detail, icon: top.icon, frameType: top.frameType, quantity: 1, unitChaos: top.unitChaos, totalChaos: top.unitChaos }
+      : { name: 'Mirror Shard', icon: '', frameType: 5, quantity: 1, unitChaos: 13 * divine, totalChaos: 13 * divine }
+    await this.p.showAlert({ ...buildAlert([item], divine, this.settings.alertSound), test: true })
+  }
+
   async clearHistory(league: string): Promise<void> {
     await this.p.storeDelete(this.historyName(league))
     await this.p.storeDelete(this.latestName(league))
@@ -365,6 +381,15 @@ export class Controller {
       items: result.items,
       pricesUpdatedAt: updatedAt,
       demo: this.demo || undefined
+    }
+
+    // Sirene: compara com o snapshot anterior antes de sobrescrevê-lo.
+    if (s.alertsEnabled && index.divineChaos > 0) {
+      const prev = await this.getLatest(league).catch(() => null)
+      const drops = detectDrops(prev, detail, s.alertThresholdDiv * index.divineChaos)
+      if (drops.length) {
+        this.p.showAlert(buildAlert(drops, index.divineChaos, s.alertSound)).catch((e: Error) => void this.p.logError('alert', e.message))
+      }
     }
 
     const { items: _items, pricesUpdatedAt: _p, ...summary } = detail

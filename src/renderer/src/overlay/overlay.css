@@ -1,0 +1,174 @@
+/* Overlay da sirene: janela transparente; só o cartão aparece por cima do jogo. */
+:root {
+  --gold: #c9aa71;
+  --gold-bright: #ecd49b;
+  --bronze: #7a6240;
+  --text: #d9d0bf;
+  --text-2: #a99f8d;
+  --r-normal: #c8c8c8;
+  --r-magic: #8888ff;
+  --r-rare: #ffff77;
+  --r-unique: #af6025;
+  --r-gem: #1ba29b;
+  --r-currency: #aa9e82;
+  --r-card: #0ebaff;
+}
+
+html,
+body {
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  cursor: default;
+}
+
+.alert {
+  width: 348px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: 'Alegreya Sans', 'Segoe UI', system-ui, sans-serif;
+  color: var(--text);
+  opacity: 0;
+}
+
+.alert[hidden] {
+  display: none;
+}
+
+.alert.in {
+  animation: pop-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1.25) forwards;
+}
+
+.alert.out {
+  animation: fade-out 450ms ease forwards;
+}
+
+.siren {
+  display: block;
+  /* O GIF foi pré-misturado com o fundo do cartão; a sombra dá o brilho vermelho em volta. */
+  filter: drop-shadow(0 0 14px rgba(255, 70, 30, 0.55));
+  margin-bottom: -18px;
+  position: relative;
+  z-index: 1;
+}
+
+.card {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 20px 16px 12px;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(180, 40, 20, 0.28), transparent 70%),
+    linear-gradient(180deg, rgba(27, 21, 14, 0.96), rgba(12, 9, 6, 0.96));
+  border: 1px solid var(--bronze);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 2px rgba(201, 170, 113, 0.18),
+    0 6px 22px rgba(0, 0, 0, 0.7);
+  animation: glow 0.7s ease-in-out infinite alternate;
+}
+
+.tag {
+  font-family: 'Alegreya SC', Georgia, serif;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ff7a5c;
+  margin-bottom: 6px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.icon {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex: none;
+}
+
+.icon[hidden] {
+  display: none;
+}
+
+.name {
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.2;
+  text-shadow: 0 1px 2px #000;
+  overflow-wrap: anywhere;
+}
+
+.detail {
+  font-size: 13px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+.detail[hidden],
+.more[hidden] {
+  display: none;
+}
+
+.value {
+  margin-top: 8px;
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--gold-bright);
+  text-shadow:
+    0 0 10px rgba(236, 212, 155, 0.35),
+    0 1px 2px #000;
+}
+
+.more {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.r-normal { color: var(--r-normal); }
+.r-magic { color: var(--r-magic); }
+.r-rare { color: var(--r-rare); }
+.r-unique { color: var(--r-unique); }
+.r-gem { color: var(--r-gem); }
+.r-currency { color: var(--r-currency); }
+.r-card { color: var(--r-card); }
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes glow {
+  from {
+    border-color: var(--bronze);
+  }
+  to {
+    border-color: #c0452c;
+  }
+}

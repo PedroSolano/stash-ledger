@@ -32,6 +32,8 @@ const ready = controller.init()
 
 // Eventos emitidos pelo Rust (espera do rate limit da GGG, progresso do download de preços).
 void listen<ProgressEvent>('progress', (e) => progress.emit(e.payload))
+// `stash-ledger.exe --test-alert` (segunda instância) pede um alerta de teste.
+void listen('test-alert', () => void ready.then(() => controller.testAlert()).catch(() => undefined))
 
 // Só em desenvolvimento: VITE_DEV_DEMO=1 entra no modo demonstração e tira um snapshot ao abrir.
 if (import.meta.env.DEV && import.meta.env.VITE_DEV_DEMO === '1') {
@@ -112,6 +114,7 @@ const api: StashLedgerApi = {
   clearHistory: (league) => controller.clearHistory(league),
   updateSettings: (patch) => controller.updateSettings(patch),
   openExternal: (url) => openExternal(url),
+  testAlert: () => controller.testAlert(),
   onProgress: (cb) => {
     const off = progress.on(cb)
     return () => void off()

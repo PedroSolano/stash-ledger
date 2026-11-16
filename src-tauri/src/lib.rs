@@ -16,10 +16,16 @@ use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::sync::Mutex as StdMutex;
 use std::time::Duration;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_opener::OpenerExt;
 use tokio::sync::{oneshot, Mutex};
 
+/// Argumentos do WebView2. Precisam ser IGUAIS em todas as janelas (todas compartilham o mesmo
+/// ambiente): sem GPU (menos memória) e áudio sem clique prévio (som da sirene no overlay).
+/// Manter em sincronia com app.windows[0].additionalBrowserArgs no tauri.conf.json.
+const BROWSER_ARGS: &str = "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-gpu --autoplay-policy=no-user-gesture-required";
+const OVERLAY_W: f64 = 380.0;
+const OVERLAY_H: f64 = 360.0;
 const SESSION_KEY: &str = "session";
 const TOKENS_KEY: &str = "oauth";
 const EXTERNAL_ALLOW: [&str; 4] = ["www.pathofexile.com", "pathofexile.com", "poe.ninja", "github.com"];
@@ -73,6 +79,8 @@ pub struct AppState {
     limiter: Mutex<Limiter>,
     ninja_lock: Mutex<()>,
     oauth_cancel: StdMutex<Option<oneshot::Sender<()>>>,
+    /// Alerta aguardando a janela de overlay terminar de carregar.
+    pending_alert: StdMutex<Option<Value>>,
 }
 
 impl AppState {
@@ -455,6 +463,86 @@ fn ninja_prices(state: State<'_, AppState>, league: String) -> Option<Value> {
     ninja::prices(&state.data_dir, &league)
 }
 
+/* ---------- overlay de alerta (sirene) ---------- */
+
+/// Mostra a janela por cima de tudo SEM ativá-la: o jogo continua com o foco do teclado.
+fn show_no_activate(w: &tauri::WebviewWindow) {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::UI::WindowsAndMessaging::{
+            SetWindowPos, ShowWindow, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SW_SHOWNOACTIVATE,
+        };
+        if let Ok(hwnd) = w.hwnd() {
+            let h = hwnd.0 as windows_sys::Win32::Foundation::HWND;
+            unsafe {
+                ShowWindow(h, SW_SHOWNOACTIVATE);
+                SetWindowPos(h, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
+            }
+            return;
+        }
+    }
+    let _ = w.show();
+}
+
+/// Canto superior esquerdo do monitor principal (onde o jogo costuma rodar), com 16 px de margem.
+fn overlay_position(app: &AppHandle) -> (f64, f64) {
+    if let Ok(Some(m)) = app.primary_monitor() {
+        let s = m.scale_factor();
+        let p = m.position();
+        return (p.x as f64 / s + 16.0, p.y as f64 / s + 16.0);
+    }
+    (16.0, 16.0)
+}
+
+/// Abre o overlay com o alerta. A janela só existe enquanto o alerta está na tela (leveza):
+/// é criada aqui e fechada pelo próprio overlay em `overlay_done`.
+#[tauri::command]
+async fn overlay_alert(app: AppHandle, state: State<'_, AppState>, alert: Value) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window("overlay") {
+        app.emit_to("overlay", "alert", alert).map_err(|e| e.to_string())?;
+        show_no_activate(&w);
+        return Ok(());
+    }
+    *state.pending_alert.lock().unwrap() = Some(alert);
+    let (x, y) = overlay_position(&app);
+    let w = tauri::WebviewWindowBuilder::new(&app, "overlay", tauri::WebviewUrl::App("overlay.html".into()))
+        .title("Stash Ledger alert")
+        .inner_size(OVERLAY_W, OVERLAY_H)
+        .position(x, y)
+        .decorations(false)
+        .transparent(true)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .resizable(false)
+        .focused(false)
+        .shadow(false)
+        .visible(false)
+        .additional_browser_args(BROWSER_ARGS)
+        .build()
+        .map_err(|e| e.to_string())?;
+    // Cliques atravessam o overlay e vão para o jogo.
+    let _ = w.set_ignore_cursor_events(true);
+    Ok(())
+}
+
+/// Chamado pelo overlay quando terminou de carregar: entrega o alerta e mostra a janela.
+#[tauri::command]
+fn overlay_ready(app: AppHandle, state: State<'_, AppState>) -> Option<Value> {
+    let alert = state.pending_alert.lock().unwrap().take();
+    if let Some(w) = app.get_webview_window("overlay") {
+        show_no_activate(&w);
+    }
+    alert
+}
+
+/// Fim do alerta: fecha a janela e libera a memória do WebView.
+#[tauri::command]
+fn overlay_done(app: AppHandle) {
+    if let Some(w) = app.get_webview_window("overlay") {
+        let _ = w.close();
+    }
+}
+
 /* ---------- inicialização ---------- */
 
 fn build_state(app: &AppHandle) -> Result<AppState, Box<dyn std::error::Error>> {
@@ -481,6 +569,7 @@ fn build_state(app: &AppHandle) -> Result<AppState, Box<dyn std::error::Error>> 
         limiter: Mutex::new(Limiter::default()),
         ninja_lock: Mutex::new(()),
         oauth_cancel: StdMutex::new(None),
+        pending_alert: StdMutex::new(None),
     })
 }
 
@@ -488,7 +577,13 @@ fn build_state(app: &AppHandle) -> Result<AppState, Box<dyn std::error::Error>> 
 pub fn run() {
     tauri::Builder::default()
         // Uma instância só: evita dois processos disputando a porta do login e os arquivos.
-        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            // `stash-ledger.exe --test-alert` com o app aberto: dispara o alerta de teste sem
+            // trazer a janela para frente (útil para ver o overlay por cima do jogo).
+            if argv.iter().any(|a| a == "--test-alert") {
+                let _ = app.emit_to("main", "test-alert", ());
+                return;
+            }
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.unminimize();
                 let _ = w.set_focus();
@@ -501,6 +596,14 @@ pub fn run() {
             let state = build_state(app.handle())?;
             app.manage(state);
             Ok(())
+        })
+        // Fechar a janela principal encerra o app mesmo com um alerta na tela.
+        .on_window_event(|w, e| {
+            if w.label() == "main" && matches!(e, tauri::WindowEvent::Destroyed) {
+                if let Some(o) = w.app_handle().get_webview_window("overlay") {
+                    let _ = o.close();
+                }
+            }
         })
         .invoke_handler(tauri::generate_handler![
             app_info,
@@ -522,7 +625,10 @@ pub fn run() {
             ninja_leagues,
             ninja_status,
             ninja_refresh,
-            ninja_prices
+            ninja_prices,
+            overlay_alert,
+            overlay_ready,
+            overlay_done
         ])
         .run(tauri::generate_context!())
         .expect("error while running Stash Ledger");

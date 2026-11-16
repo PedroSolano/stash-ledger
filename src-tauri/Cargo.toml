@@ -30,6 +30,10 @@ rand = "0.8"
 url = "2"
 keyring = { version = "3", features = ["windows-native", "linux-native"] }
 
+# Só para mostrar o overlay sem roubar o foco do jogo (ShowWindow com SW_SHOWNOACTIVATE).
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+
 [dev-dependencies]
 tokio = { version = "1", features = ["rt", "macros", "net", "time", "io-util", "sync"] }
 
