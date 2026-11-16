@@ -1,7 +1,7 @@
 {
   "name": "stash-ledger",
   "productName": "Stash Ledger",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "Path of Exile stash valuation with poe.ninja prices. Runs locally, no backend.",
   "private": true,
   "type": "module",
