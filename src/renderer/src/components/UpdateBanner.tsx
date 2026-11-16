@@ -7,19 +7,26 @@ interface Props {
   update: UpdateState
   /** Enquanto um snapshot estiver rodando, a contagem fica pausada. */
   busy: boolean
+  /** Janela escondida (bandeja / jogando): não reinicia por conta própria no meio do jogo. */
+  hidden?: boolean
 }
 
 /**
  * Faixa de atualização: mostra o download e, quando a versão nova está pronta, reinicia sozinho
  * depois de uma contagem curta. "Later" adia; aí a versão nova entra quando o app for fechado.
  */
-export function UpdateBanner({ update, busy }: Props) {
+export function UpdateBanner({ update, busy, hidden = false }: Props) {
   const [seconds, setSeconds] = useState(COUNTDOWN_S)
   const [postponed, setPostponed] = useState(false)
   const ready = update.status === 'ready'
 
+  // Ao reaparecer, a contagem recomeça do início (o usuário precisa ver o aviso).
   useEffect(() => {
-    if (!ready || postponed || busy) return
+    if (hidden) setSeconds(COUNTDOWN_S)
+  }, [hidden])
+
+  useEffect(() => {
+    if (!ready || postponed || busy || hidden) return
     if (seconds <= 0) {
       void window.api.installUpdate()
       return
@@ -48,7 +55,7 @@ export function UpdateBanner({ update, busy }: Props) {
       <span>
         <strong>Version {update.version} is ready.</strong>{' '}
         {postponed
-          ? 'It will be installed when you close the app.'
+          ? 'It will be installed when you quit the app (tray icon → Quit).'
           : busy
             ? 'Restarting as soon as the snapshot finishes.'
             : `Restarting to update in ${seconds}s…`}

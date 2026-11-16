@@ -2,6 +2,7 @@ import type {
   AppState,
   AuthStatus,
   DropAlert,
+  HotkeyConfig,
   PoeItem,
   PricedItem,
   PriceStatus,
@@ -50,6 +51,8 @@ export interface Platform {
   logError(context: string, message: string, extra?: Record<string, unknown>): Promise<void>
   /** Abre o overlay de alerta no canto superior esquerdo da tela, sem tirar o foco do jogo. */
   showAlert(alert: DropAlert): Promise<void>
+  /** Atalhos dentro do jogo (hook de teclado no backend). */
+  configureHotkeys(cfg: HotkeyConfig): Promise<void>
 }
 
 export interface ControllerEvents {
@@ -90,6 +93,7 @@ export class Controller {
     if (!this.settings.clientId) this.settings.clientId = defaults.clientId
     if (!this.settings.contact) this.settings.contact = defaults.contact
     await this.pushConfig()
+    await this.pushHotkeys()
     this.auth = await this.p.authStatus()
     this.schedule()
   }
@@ -97,6 +101,16 @@ export class Controller {
   private pushConfig(): Promise<void> {
     const s = this.settings
     return this.p.configure({ clientId: s.clientId, redirectUri: s.redirectUri, contact: s.contact, ninjaBaseUrl: s.ninjaBaseUrl })
+  }
+
+  private hotkeyConfig(s: Settings): HotkeyConfig {
+    return { enabled: s.hotkeysEnabled, overlay: s.overlayKey, commands: s.chatCommands.filter((c) => c.key) }
+  }
+
+  private pushHotkeys(): Promise<void> {
+    return this.p
+      .configureHotkeys(this.hotkeyConfig(this.settings))
+      .catch((e: Error) => void this.p.logError('hotkeys', e.message))
   }
 
   private method(): 'demo' | 'oauth' | 'session' | null {
@@ -133,6 +147,7 @@ export class Controller {
     ) {
       await this.pushConfig()
     }
+    if (JSON.stringify(this.hotkeyConfig(prev)) !== JSON.stringify(this.hotkeyConfig(next))) await this.pushHotkeys()
     if (prev.autoSnapshotMinutes !== next.autoSnapshotMinutes || prev.priceRefreshMinutes !== next.priceRefreshMinutes) {
       this.schedule()
     }

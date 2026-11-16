@@ -312,6 +312,123 @@ code {
 
 /* ---------- layout ---------- */
 
+/* ---------- janela sem moldura do Windows: barra de título própria ---------- */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid #3a2e20;
+  box-sizing: border-box;
+}
+.shell-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.shell-body > .app {
+  flex: 1;
+  min-height: 0;
+}
+.shell-body > .welcome {
+  flex: 1 0 auto;
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 34px;
+  flex: none;
+  padding-left: 12px;
+  background: linear-gradient(180deg, #17120d, #0b0907);
+  border-bottom: 1px solid #000;
+  user-select: none;
+}
+.titlebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: var(--gold-bright);
+}
+.titlebar .brand-mark {
+  width: 20px;
+  height: 20px;
+}
+.titlebar .brand-mark span {
+  font-size: 10px;
+}
+.titlebar-hint {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.titlebar .spacer {
+  flex: 1;
+  align-self: stretch;
+}
+.tb-btn {
+  align-self: stretch;
+  width: 46px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.tb-btn:hover {
+  background: rgba(201, 170, 113, 0.1);
+  color: var(--gold-bright);
+}
+.tb-btn.close:hover {
+  background: #8c2a1c;
+  color: #fff;
+}
+
+kbd {
+  display: inline-block;
+  padding: 0 6px;
+  font-family: var(--font-body);
+  font-size: 0.92em;
+  line-height: 1.5;
+  color: var(--text-bright);
+  background: var(--panel-3);
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+}
+
+/* Campo que grava um atalho: clique e aperte a combinação. */
+.hotkey-input {
+  min-width: 150px;
+  text-align: center;
+  cursor: pointer;
+  caret-color: transparent;
+}
+.hotkey-input.recording {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+  box-shadow: 0 0 10px rgba(201, 170, 113, 0.25);
+}
+.cmd-table {
+  display: grid;
+  grid-template-columns: 170px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.cmd-table .head {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--gold-dim);
+}
+
 .app {
   display: flex;
   flex-direction: column;

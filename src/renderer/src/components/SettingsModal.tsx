@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import type { ChatCommand } from '../../../shared/hotkeys'
 import type { AppState, Settings, UpdateState } from '../../../shared/types'
 import { LAYOUT_LABEL, type Layout, type LayoutPref } from '../lib/useLayout'
+import { HotkeyInput } from './HotkeyInput'
 
 function updateText(u: UpdateState): string {
   switch (u.status) {
@@ -21,6 +23,35 @@ function updateText(u: UpdateState): string {
   }
 }
 
+function ChatRow(props: {
+  cmd: ChatCommand
+  disabled: boolean
+  conflict: boolean
+  onKey: (key: string) => void
+  onCommand: (command: string) => void
+  onRemove: () => void
+}) {
+  const { cmd, disabled, conflict } = props
+  return (
+    <>
+      <HotkeyInput value={cmd.key} disabled={disabled} invalid={conflict} onChange={props.onKey} />
+      <input
+        className="input"
+        value={cmd.command}
+        maxLength={120}
+        disabled={disabled}
+        placeholder="/hideout"
+        aria-label="Chat command"
+        title={conflict ? 'This key is already used above' : undefined}
+        onChange={(e) => props.onCommand(e.target.value)}
+      />
+      <button className="btn ghost" disabled={disabled} onClick={props.onRemove} aria-label="Remove command">
+        ✕
+      </button>
+    </>
+  )
+}
+
 interface Props {
   state: AppState
   update: UpdateState
@@ -37,6 +68,14 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const set = <K extends keyof Settings>(k: K, v: Settings[K]): void => setS((prev) => ({ ...prev, [k]: v }))
+  const setCmd = (i: number, patch: Partial<ChatCommand>): void =>
+    set(
+      'chatCommands',
+      s.chatCommands.map((c, j) => (j === i ? { ...c, ...patch } : c))
+    )
+  // Atalho repetido (entre comandos ou com o do overlay): o segundo seria ignorado ao salvar.
+  const usedBefore = (i: number): string[] => [s.overlayKey, ...s.chatCommands.slice(0, i).map((c) => c.key)]
+  const conflict = (i: number): boolean => !!s.chatCommands[i].key && usedBefore(i).includes(s.chatCommands[i].key)
 
   const save = async (): Promise<void> => {
     setSaving(true)
@@ -54,7 +93,10 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
         priceRefreshMinutes: s.priceRefreshMinutes,
         alertsEnabled: s.alertsEnabled,
         alertThresholdDiv: s.alertThresholdDiv,
-        alertSound: s.alertSound
+        alertSound: s.alertSound,
+        hotkeysEnabled: s.hotkeysEnabled,
+        overlayKey: s.overlayKey,
+        chatCommands: s.chatCommands.filter((c) => c.command.trim())
       })
       onClose()
     } catch (e) {
@@ -93,6 +135,68 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
             <span className="hint">
               Automatic picks the layout from your window size and aspect ratio: ultrawide monitors (21:9, 32:9) get three
               columns. Applies right away.
+            </span>
+          </div>
+
+          <div className="section-title">In-game overlay &amp; hotkeys</div>
+          <label className="check">
+            <input type="checkbox" checked={s.hotkeysEnabled} onChange={(e) => set('hotkeysEnabled', e.target.checked)} />
+            <span>
+              Hotkeys in game
+              <div className="sub">
+                Only active while Path of Exile is the focused window; every other key goes straight to the game. Works in
+                windowed and windowed fullscreen, not exclusive fullscreen.
+              </div>
+            </span>
+          </label>
+          <div className="field">
+            <label htmlFor="overlay-key">Show / hide Stash Ledger over the game</label>
+            <HotkeyInput id="overlay-key" value={s.overlayKey} disabled={!s.hotkeysEnabled} onChange={(v) => set('overlayKey', v)} />
+            <span className="hint">
+              Press it in game to open this window on top of the game; press it again, press Esc or click the game to hide
+              it. Closing the window keeps Stash Ledger running in the tray (alerts and auto snapshots stay on); quit from the
+              tray icon.
+            </span>
+          </div>
+          <div className="field">
+            <label>Chat commands</label>
+            {s.chatCommands.length > 0 && (
+              <div className="cmd-table">
+                <span className="head">Key</span>
+                <span className="head">Command</span>
+                <span />
+                {s.chatCommands.map((c, i) => (
+                  <ChatRow
+                    key={i}
+                    cmd={c}
+                    disabled={!s.hotkeysEnabled}
+                    conflict={conflict(i)}
+                    onKey={(key) => setCmd(i, { key })}
+                    onCommand={(command) => setCmd(i, { command })}
+                    onRemove={() =>
+                      set(
+                        'chatCommands',
+                        s.chatCommands.filter((_, j) => j !== i)
+                      )
+                    }
+                  />
+                ))}
+              </div>
+            )}
+            <div>
+              <button
+                className="btn"
+                disabled={!s.hotkeysEnabled || s.chatCommands.length >= 30}
+                onClick={() => set('chatCommands', [...s.chatCommands, { key: '', command: '/' }])}
+              >
+                + Add command
+              </button>
+            </div>
+            <span className="hint">
+              Each key opens the chat, types the command and sends it: one action per key press, as GGG's rules for
+              third-party tools require. It borrows the clipboard for a moment and then puts your text back. Examples:
+              /hideout, /kingsmarch, /menagerie, /delve, /exit (back to character select). Assumes chat opens with Enter (the
+              default).
             </span>
           </div>
 
@@ -249,6 +353,9 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
           )}
           <button className="btn" style={{ marginLeft: onClearHistory ? 10 : 0 }} onClick={() => void window.api.openLog()}>
             Open error log
+          </button>
+          <button className="btn" style={{ marginLeft: 10 }} onClick={() => void window.api.quit()}>
+            Quit Stash Ledger
           </button>
           {!state.secureStorage && (
             <div className="banner" style={{ marginTop: 16 }}>

@@ -1,4 +1,5 @@
-// Tipos compartilhados entre o processo principal (main), o preload e a interface (renderer).
+// Tipos compartilhados entre o controller (src/core), a interface e o overlay.
+import type { ChatCommand } from './hotkeys'
 
 /* ---------- Formato dos itens da API oficial da GGG (subconjunto usado) ---------- */
 
@@ -152,6 +153,24 @@ export interface Settings {
   alertThresholdDiv: number
   /** Tocar o som da sirene junto com o overlay. */
   alertSound: boolean
+  /** Atalhos dentro do jogo (abrir o app por cima do jogo, comandos de chat). */
+  hotkeysEnabled: boolean
+  /** Mostra/esconde o app por cima do jogo. Formato em src/shared/hotkeys.ts. */
+  overlayKey: string
+  /** Atalho → comando de chat (/hideout, /kingsmarch…). */
+  chatCommands: ChatCommand[]
+}
+
+export interface WindowVisibility {
+  visible: boolean
+  overlay: boolean
+}
+
+/** Configuração de atalhos enviada ao backend. */
+export interface HotkeyConfig {
+  enabled: boolean
+  overlay: string
+  commands: ChatCommand[]
 }
 
 export interface DropAlertItem {
@@ -241,6 +260,14 @@ export interface StashLedgerApi {
   openLog(): Promise<void>
   /** Dispara o overlay de alerta com um item de exemplo. */
   testAlert(): Promise<void>
+  /** Suspende os atalhos enquanto o usuário grava uma combinação nas configurações. */
+  pauseHotkeys(paused: boolean): Promise<void>
+  /** Esconde a janela (fica na bandeja); se estava por cima do jogo, devolve o foco a ele. */
+  hideWindow(): Promise<void>
+  /** Fecha o app de vez (instala a atualização pendente, se houver). */
+  quit(): Promise<void>
+  /** Janela visível ou escondida (bandeja / atalho do overlay); `overlay`: aberta por cima do jogo. */
+  onVisibility(cb: (v: WindowVisibility) => void): () => void
   getUpdate(): Promise<UpdateState>
   checkUpdate(): Promise<void>
   installUpdate(): Promise<void>

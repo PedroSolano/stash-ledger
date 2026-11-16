@@ -2,7 +2,9 @@
 //! motor de preços e só chama os comandos abaixo; cookies e tokens nunca saem deste processo.
 
 mod ggg;
+mod hotkeys;
 mod logfile;
+mod mainwin;
 mod ninja;
 mod oauth;
 mod ratelimit;
@@ -543,6 +545,64 @@ fn overlay_done(app: AppHandle) {
     }
 }
 
+/* ---------- atalhos, janela e bandeja ---------- */
+
+#[tauri::command]
+fn hotkeys_configure(cfg: hotkeys::HotkeyConfig) -> usize {
+    hotkeys::configure(&cfg)
+}
+
+#[tauri::command]
+fn hotkeys_pause(paused: bool) {
+    hotkeys::set_paused(paused);
+}
+
+#[tauri::command]
+fn main_hide(app: AppHandle) {
+    mainwin::hide(&app);
+}
+
+#[tauri::command]
+fn app_quit(app: AppHandle) {
+    app.exit(0);
+}
+
+fn build_tray(app: &tauri::App) -> tauri::Result<()> {
+    use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+    use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+    let open = MenuItem::with_id(app, "open", "Open Stash Ledger", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&open, &PredefinedMenuItem::separator(app)?, &quit])?;
+    let mut tray = TrayIconBuilder::with_id("main")
+        .tooltip("Stash Ledger")
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "open" => mainwin::show_normal(app),
+            "quit" => {
+                // A interface instala a atualização pendente (se houver) e chama app_quit.
+                // Se ela não responder, fecha mesmo assim.
+                let _ = app.emit_to("main", "quit-requested", ());
+                let app = app.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(Duration::from_secs(8));
+                    app.exit(0);
+                });
+            }
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
+                mainwin::show_normal(tray.app_handle());
+            }
+        });
+    if let Some(icon) = app.default_window_icon() {
+        tray = tray.icon(icon.clone());
+    }
+    tray.build(app)?;
+    Ok(())
+}
+
 /* ---------- inicialização ---------- */
 
 fn build_state(app: &AppHandle) -> Result<AppState, Box<dyn std::error::Error>> {
@@ -584,10 +644,7 @@ pub fn run() {
                 let _ = app.emit_to("main", "test-alert", ());
                 return;
             }
-            if let Some(w) = app.get_webview_window("main") {
-                let _ = w.unminimize();
-                let _ = w.set_focus();
-            }
+            mainwin::show_normal(app);
         }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -595,14 +652,35 @@ pub fn run() {
         .setup(|app| {
             let state = build_state(app.handle())?;
             app.manage(state);
+            build_tray(app)?;
+            let handle = app.handle().clone();
+            hotkeys::init(move |game| mainwin::toggle(&handle, game));
+            #[cfg(windows)]
+            if let Some(w) = app.get_webview_window("main") {
+                if let Ok(h) = w.hwnd() {
+                    hotkeys::set_main_window(h.0 as isize);
+                }
+            }
             Ok(())
         })
-        // Fechar a janela principal encerra o app mesmo com um alerta na tela.
         .on_window_event(|w, e| {
-            if w.label() == "main" && matches!(e, tauri::WindowEvent::Destroyed) {
-                if let Some(o) = w.app_handle().get_webview_window("overlay") {
-                    let _ = o.close();
+            if w.label() != "main" {
+                return;
+            }
+            match e {
+                // Fechar só esconde: o app segue na bandeja (sair é pelo menu da bandeja).
+                tauri::WindowEvent::CloseRequested { api, .. } => {
+                    api.prevent_close();
+                    mainwin::hide(w.app_handle());
                 }
+                tauri::WindowEvent::Focused(false) => mainwin::focus_lost(w.app_handle()),
+                // Saindo de vez: fecha também um alerta que esteja na tela.
+                tauri::WindowEvent::Destroyed => {
+                    if let Some(o) = w.app_handle().get_webview_window("overlay") {
+                        let _ = o.close();
+                    }
+                }
+                _ => {}
             }
         })
         .invoke_handler(tauri::generate_handler![
@@ -628,7 +706,11 @@ pub fn run() {
             ninja_prices,
             overlay_alert,
             overlay_ready,
-            overlay_done
+            overlay_done,
+            hotkeys_configure,
+            hotkeys_pause,
+            main_hide,
+            app_quit
         ])
         .run(tauri::generate_context!())
         .expect("error while running Stash Ledger");

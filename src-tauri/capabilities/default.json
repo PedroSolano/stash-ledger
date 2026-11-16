@@ -1,7 +1,15 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissões da janela principal: eventos do backend, atualização e reinício após o update.",
+  "description": "Permissões da janela principal: eventos do backend, barra de título própria (arrastar, minimizar, maximizar), atualização e reinício após o update.",
   "windows": ["main"],
-  "permissions": ["core:default", "updater:default", "process:allow-restart"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-internal-toggle-maximize",
+    "updater:default",
+    "process:allow-restart"
+  ]
 }

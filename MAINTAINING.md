@@ -29,6 +29,7 @@ npm run dev                          # opens the app through WSLg
 | `npm test` | TypeScript tests (pricing engine, normalization, compact cache format, drop alerts) |
 | `npm run test:rust` | Rust tests (rate limiter, OAuth flow, legacy endpoint parsing, price cache, store) |
 | `npm run typecheck` | Type checks the TypeScript code |
+| `bash scripts/check-windows.sh` | Type checks the Rust backend for Windows, including `cfg(windows)` code (needs `rustup target add x86_64-pc-windows-msvc`) |
 | `npm run build` | Builds a release bundle for the current OS (on Linux, a Linux bundle; Windows releases come from CI) |
 
 `VITE_DEV_DEMO=1 npm run dev` starts in demo mode and takes a snapshot on launch (development builds only).
@@ -96,6 +97,13 @@ The cache (`src-tauri/src/ninja.rs`) is refreshed on a schedule by the controlle
 - All WebView2 windows share one environment, so their browser arguments must match: `BROWSER_ARGS` in `lib.rs` and `additionalBrowserArgs` in `tauri.conf.json` (which includes `--autoplay-policy=no-user-gesture-required` for the sound).
 - With the app open, `stash-ledger.exe --test-alert` fires a test alert without bringing the main window forward (handy to check it over the game).
 
+## In-game overlay and hotkeys
+
+- **Hotkeys** (`src-tauri/src/hotkeys.rs`): a `WH_KEYBOARD_LL` hook on its own thread, installed only once some hotkey is active. It acts only when the foreground window has the class `POEWindowClass` (Path of Exile), or is the app's main window (for the overlay key only); otherwise it passes every key on. Keys are matched by **scan code** (physical position, layout independent); the UI records `KeyboardEvent.code` and both sides share the key list (`src/shared/hotkeys.ts` ↔ `scan_code`, kept in sync by a Rust test). A matched key-down is swallowed together with its repeats and key-up; the action runs on a worker thread because the hook must return within milliseconds.
+- **Chat commands**: release held modifiers (with a mask key so a lone Alt doesn't open the window menu), put the command on the clipboard, send Enter, Ctrl+V, Enter with `SendInput`, then restore the previous clipboard text (non-text clipboard content is lost). Events the app injects carry a marker in `dwExtraInfo` so the hook ignores them; injected keys from other software (mouse macro keys) still work.
+- **Overlay window** (`src-tauri/src/mainwin.rs`): the main window has no Windows frame (`decorations: false`, title bar in `TitleBar.tsx`). The overlay key centres it on the game window (shrinking it to fit), makes it topmost and focuses it; hiding returns the focus to the game with `SetForegroundWindow`. Losing focus to the game hides it. Closing the window hides it to the tray; **Quit** (tray menu or Settings) asks the UI to install a downloaded update first, then exits. While hidden, the update countdown is paused so the app never restarts in the middle of a map.
+- `stash-ledger.exe --test-alert` still works with the app hidden.
+
 ## Security design
 
 - **Sign-in**: PKCE S256 with 32 bytes of entropy; random `state` compared in constant time; redirect server bound to `127.0.0.1`, closed right after the callback or after 5 min; sign-in happens in the system browser (RFC 8252), not a webview.
@@ -109,7 +117,9 @@ The cache (`src-tauri/src/ninja.rs`) is refreshed on a schedule by the controlle
 
 ```
 src-tauri/
-  src/lib.rs            commands, app state, startup
+  src/lib.rs            commands, app state, startup, tray
+  src/hotkeys.rs        in-game hotkeys: keyboard hook, chat commands, clipboard
+  src/mainwin.rs        main window as an overlay over the game, hide to tray
   src/ggg.rs            legacy endpoint + official API, tab parsing
   src/oauth.rs          OAuth PKCE flow with local redirect server
   src/ratelimit.rs      dynamic limits from X-Rate-Limit-* headers

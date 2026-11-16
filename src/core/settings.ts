@@ -1,3 +1,4 @@
+import { DEFAULT_CHAT_COMMANDS, normalizeCombo, sanitizeChatCommands } from '../shared/hotkeys'
 import type { Settings } from '../shared/types'
 
 export const PRICE_REFRESH_OPTIONS = [15, 30, 60, 120] as const
@@ -17,7 +18,10 @@ export function defaultSettings(env: Record<string, string | undefined> = {}): S
     priceRefreshMinutes: 30,
     alertsEnabled: true,
     alertThresholdDiv: 1,
-    alertSound: true
+    alertSound: true,
+    hotkeysEnabled: true,
+    overlayKey: 'Shift+Space',
+    chatCommands: DEFAULT_CHAT_COMMANDS.map((c) => ({ ...c }))
   }
 }
 
@@ -66,6 +70,12 @@ export function sanitizeSettings(patch: Partial<Settings>, current: Settings): S
   if (patch.alertThresholdDiv !== undefined) {
     const n = Number(patch.alertThresholdDiv)
     next.alertThresholdDiv = Number.isFinite(n) ? Math.min(100000, Math.max(0.05, Math.round(n * 100) / 100)) : 1
+  }
+  if (patch.hotkeysEnabled !== undefined) next.hotkeysEnabled = !!patch.hotkeysEnabled
+  // Atalho vazio desliga a função; inválido mantém o atual.
+  if (patch.overlayKey !== undefined) next.overlayKey = patch.overlayKey === '' ? '' : normalizeCombo(patch.overlayKey) || current.overlayKey
+  if (patch.chatCommands !== undefined || patch.overlayKey !== undefined) {
+    next.chatCommands = sanitizeChatCommands(patch.chatCommands ?? current.chatCommands, [next.overlayKey])
   }
   return next
 }

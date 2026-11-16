@@ -30,8 +30,13 @@ export const tauriPlatform: Platform = {
   ninjaRefresh: (league, force) => call('ninja_refresh', { league, force }),
   ninjaPrices: (league) => call('ninja_prices', { league }),
   logError: (context, message, extra) => call('log_error', { context, message, extra: extra ?? null }),
-  showAlert: (alert) => call('overlay_alert', { alert })
+  showAlert: (alert) => call('overlay_alert', { alert }),
+  configureHotkeys: (cfg) => call('hotkeys_configure', { cfg })
 }
+
+export const pauseHotkeys = (paused: boolean): Promise<void> => call('hotkeys_pause', { paused })
+export const hideWindow = (): Promise<void> => call('main_hide')
+export const quitApp = (): Promise<void> => call('app_quit')
 
 export const openExternal = (url: string): Promise<void> => call('open_external', { url })
 export const openLog = (): Promise<void> => call('open_log')

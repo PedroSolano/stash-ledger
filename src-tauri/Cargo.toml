@@ -13,7 +13,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-opener = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
@@ -30,9 +30,17 @@ rand = "0.8"
 url = "2"
 keyring = { version = "3", features = ["windows-native", "linux-native"] }
 
-# Só para mostrar o overlay sem roubar o foco do jogo (ShowWindow com SW_SHOWNOACTIVATE).
+# Win32 direto: overlay sem roubar foco, hook de teclado dos atalhos, envio de teclas e área de transferência.
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+windows-sys = { version = "0.59", features = [
+  "Win32_Foundation",
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_System_LibraryLoader",
+  "Win32_System_DataExchange",
+  "Win32_System_Memory",
+  "Win32_System_Ole",
+] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt", "macros", "net", "time", "io-util", "sync"] }

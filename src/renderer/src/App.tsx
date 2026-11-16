@@ -1,8 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import type { AppState, ProgressEvent, Settings, SnapshotDetail, SnapshotSummary, UpdateState } from '../../shared/types'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import type {
+  AppState,
+  ProgressEvent,
+  Settings,
+  SnapshotDetail,
+  SnapshotSummary,
+  UpdateState,
+  WindowVisibility
+} from '../../shared/types'
 import { Dashboard } from './components/Dashboard'
 import { SettingsModal } from './components/SettingsModal'
 import { TabPicker } from './components/TabPicker'
+import { TitleBar } from './components/TitleBar'
 import { UpdateBanner } from './components/UpdateBanner'
 import { Welcome } from './components/Welcome'
 import { ago } from './lib/format'
@@ -33,6 +42,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null)
   const [modal, setModal] = useState<'tabs' | 'settings' | null>(null)
   const [update, setUpdate] = useState<UpdateState>({ status: 'idle' })
+  const [vis, setVis] = useState<WindowVisibility>({ visible: true, overlay: false })
   const [, setTick] = useState(0)
   const autoOpened = useRef(false)
   const { layout, detected, pref: layoutPref, setPref: setLayoutPref } = useLayout()
@@ -53,14 +63,26 @@ export function App() {
     })
     api.getUpdate().then(setUpdate).catch(() => undefined)
     const offU = api.onUpdate(setUpdate)
+    const offV = api.onVisibility(setVis)
     const timer = setInterval(() => setTick((t) => t + 1), 30_000)
     return () => {
       offP()
       offS()
       offU()
+      offV()
       clearInterval(timer)
     }
   }, [])
+
+  // Aberta por cima do jogo: Esc esconde e devolve o foco ao jogo (se não houver janela de diálogo aberta).
+  useEffect(() => {
+    if (!vis.overlay || modal) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape' && !e.defaultPrevented) void api.hideWindow()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [vis.overlay, modal])
 
   const session = !!state && (state.demo || state.auth.loggedIn)
   const league = state?.settings.league ?? null
@@ -165,10 +187,17 @@ export function App() {
     </>
   )
 
-  const banner = <UpdateBanner update={update} busy={busy === 'snapshot'} />
+  // Escondida (bandeja / jogo), a contagem para reiniciar e atualizar fica pausada.
+  const banner = <UpdateBanner update={update} busy={busy === 'snapshot'} hidden={!vis.visible} />
+  const shell = (body: ReactNode) => (
+    <div className="shell">
+      <TitleBar overlayKey={state.settings.hotkeysEnabled ? state.settings.overlayKey : ''} />
+      <div className="shell-body">{body}</div>
+    </div>
+  )
 
   if (!session) {
-    return (
+    return shell(
       <>
         {banner}
         <Welcome
@@ -188,16 +217,10 @@ export function App() {
 
   const status = progressText(progress)
 
-  return (
+  return shell(
     <div className="app">
       {banner}
       <div className="topbar">
-        <div className="brand">
-          <span className="brand-mark">
-            <span>S</span>
-          </span>
-          Stash Ledger
-        </div>
         <select
           className="select"
           aria-label="League"
