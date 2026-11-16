@@ -16,6 +16,16 @@ fn main_window(app: &AppHandle) -> Option<WebviewWindow> {
     app.get_webview_window("main")
 }
 
+/// Mostra sem botão na barra de tarefas: o app vive na bandeja. O Windows recria o botão quando
+/// uma janela escondida volta a aparecer, então a flag é reaplicada a cada vez.
+fn show(w: &WebviewWindow) {
+    let _ = w.set_skip_taskbar(true);
+    let _ = w.unminimize();
+    let _ = w.show();
+    let _ = w.set_skip_taskbar(true);
+    let _ = w.set_focus();
+}
+
 /// Avisa a interface (pausa a contagem de atualização quando escondida; Esc só esconde no overlay).
 fn visible(app: &AppHandle, v: bool) {
     let overlay = v && OVERLAY.load(Ordering::Relaxed);
@@ -27,9 +37,7 @@ pub fn show_normal(app: &AppHandle) {
     let Some(w) = main_window(app) else { return };
     OVERLAY.store(false, Ordering::Relaxed);
     let _ = w.set_always_on_top(false);
-    let _ = w.unminimize();
-    let _ = w.show();
-    let _ = w.set_focus();
+    show(&w);
     visible(app, true);
 }
 
@@ -71,9 +79,7 @@ pub fn toggle(app: &AppHandle, game: isize) {
         }
     }
     let _ = w.set_always_on_top(true);
-    let _ = w.unminimize();
-    let _ = w.show();
-    let _ = w.set_focus();
+    show(&w);
     visible(app, true);
 }
 

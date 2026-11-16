@@ -20,6 +20,7 @@
         "minHeight": 620,
         "center": true,
         "decorations": false,
+        "skipTaskbar": true,
         "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-gpu --autoplay-policy=no-user-gesture-required"
       }
     ],

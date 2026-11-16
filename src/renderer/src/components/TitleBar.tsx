@@ -26,11 +26,7 @@ export function TitleBar({ overlayKey }: Props) {
         </span>
       )}
       <span className="spacer" data-tauri-drag-region />
-      <button className="tb-btn" onClick={() => void win.minimize()} aria-label="Minimize" title="Minimize">
-        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-          <path d="M1 5.5h8" stroke="currentColor" strokeWidth="1.2" />
-        </svg>
-      </button>
+      {/* Sem minimizar: o app não tem botão na barra de tarefas; o ✕ esconde na bandeja. */}
       <button className="tb-btn" onClick={() => void win.toggleMaximize()} aria-label="Maximize" title="Maximize">
         <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
           <rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="currentColor" strokeWidth="1.2" />

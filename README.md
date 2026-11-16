@@ -65,7 +65,7 @@ Markers in the item table:
 
 ### In game: overlay and hotkeys
 
-Stash Ledger is meant to stay open while you play. Closing the window only hides it: the app keeps running in the **system tray** (next to the clock), so alerts, automatic snapshots and hotkeys keep working. Click the tray icon to open it again; right-click it and choose **Quit** to close it for real.
+Stash Ledger is meant to stay open while you play. It has no taskbar button. Closing the window only hides it: the app keeps running in the **system tray** (next to the clock), so alerts, automatic snapshots and hotkeys keep working. Click the tray icon to open it again; right-click it and choose **Quit** to close it for real.
 
 - **Shift + Space** in game opens Stash Ledger on top of the game. Press it again, press **Esc** or click the game to hide it; the game gets the focus back.
 - **Chat commands**: by default **F5** goes to your hideout (`/hideout`), **F6** to Kingsmarch (`/kingsmarch`) and **F9** back to character select (`/exit`). Add, remove or change them in **Settings → In-game overlay & hotkeys**: click a key field and press the combination you want.
