@@ -26,7 +26,7 @@ npm run dev                          # opens the app through WSLg
 | Script | What it does |
 |---|---|
 | `npm run dev` | Runs the app with hot reload (Vite on 127.0.0.1:5173 + Rust in debug) |
-| `npm test` | TypeScript tests (pricing engine, normalization, compact cache format, drop alerts) |
+| `npm test` | TypeScript tests (pricing engine, normalization, compact cache format, drop alerts, hotkeys, price check) |
 | `npm run test:rust` | Rust tests (rate limiter, OAuth flow, legacy endpoint parsing, price cache, store) |
 | `npm run typecheck` | Type checks the TypeScript code |
 | `bash scripts/check-windows.sh` | Type checks the Rust backend for Windows, including `cfg(windows)` code (needs `rustup target add x86_64-pc-windows-msvc`) |
@@ -102,6 +102,7 @@ The cache (`src-tauri/src/ninja.rs`) is refreshed on a schedule by the controlle
 - **Hotkeys** (`src-tauri/src/hotkeys.rs`): a `WH_KEYBOARD_LL` hook on its own thread, installed only once some hotkey is active. It acts only when the foreground window has the class `POEWindowClass` (Path of Exile), or is the app's main window (for the overlay key only); otherwise it passes every key on. Keys are matched by **scan code** (physical position, layout independent); the UI records `KeyboardEvent.code` and both sides share the key list (`src/shared/hotkeys.ts` ↔ `scan_code`, kept in sync by a Rust test). A matched key-down is swallowed together with its repeats and key-up; the action runs on a worker thread because the hook must return within milliseconds.
 - **Chat commands**: release held modifiers (with a mask key so a lone Alt doesn't open the window menu), put the command on the clipboard, send Enter, Ctrl+V, Enter with `SendInput`, then restore the previous clipboard text (non-text clipboard content is lost). Events the app injects carry a marker in `dwExtraInfo` so the hook ignores them; injected keys from other software (mouse macro keys) still work.
 - **Overlay window** (`src-tauri/src/mainwin.rs`): the main window has no Windows frame (`decorations: false`, title bar in `TitleBar.tsx`) and no taskbar button (`skipTaskbar`, re-applied on every show because Windows recreates the button when a hidden window reappears; no minimize button, since a minimized window would have nothing to restore it from). The overlay key centres it on the game window (shrinking it to fit), makes it topmost and focuses it; hiding returns the focus to the game with `SetForegroundWindow`. Losing focus to the game hides it. Closing the window hides it to the tray; **Quit** (tray menu or Settings) asks the UI to install a downloaded update first, then exits. While hidden, the update countdown is paused so the app never restarts in the middle of a map.
+- **Price check** (default Alt+D): the hook swallows the key, the worker releases the held modifiers, sends Ctrl+C and waits for the clipboard sequence number to change (up to 800 ms; no change means the cursor wasn't over an item), reads the item text and restores the clipboard. `pricewin::request` sends the text to the main webview, where `src/core/pricing/clipboard.ts` turns it into the API item format and `src/core/pricecheck.ts` prices it with the same engine as snapshots (magic items try the base hidden inside the name). The controller keeps that price index in memory for 15 min after the last check, rebuilding it when the poe.ninja cache changes. The result goes to the `price` window (`src-tauri/src/pricewin.rs`, `src/renderer/pricecheck.html`): created on the first check and then only hidden, click-through, never focused, placed right of the cursor (left if it doesn't fit) inside the game window, hidden when the mouse moves more than 140 px, the game leaves the foreground or after 30 s.
 - `stash-ledger.exe --test-alert` still works with the app hidden.
 
 ## Security design
@@ -120,6 +121,7 @@ src-tauri/
   src/lib.rs            commands, app state, startup, tray
   src/hotkeys.rs        in-game hotkeys: keyboard hook, chat commands, clipboard
   src/mainwin.rs        main window as an overlay over the game, hide to tray
+  src/pricewin.rs       price check window next to the cursor
   src/ggg.rs            legacy endpoint + official API, tab parsing
   src/oauth.rs          OAuth PKCE flow with local redirect server
   src/ratelimit.rs      dynamic limits from X-Rate-Limit-* headers

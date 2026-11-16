@@ -4,6 +4,7 @@ import type {
   DropAlert,
   HotkeyConfig,
   PoeItem,
+  PriceCheckResult,
   PricedItem,
   PriceStatus,
   ProgressEvent,
@@ -13,6 +14,7 @@ import type {
   StashTabInfo
 } from '../shared/types'
 import { buildAlert, detectDrops } from './alerts'
+import { checkPrice } from './pricecheck'
 import { DEMO_TABS, demoItems } from './demo/fixtures'
 import type { CompactPrices } from './pricing/ninja'
 import { PriceIndex } from './pricing/priceIndex'
@@ -104,7 +106,12 @@ export class Controller {
   }
 
   private hotkeyConfig(s: Settings): HotkeyConfig {
-    return { enabled: s.hotkeysEnabled, overlay: s.overlayKey, commands: s.chatCommands.filter((c) => c.key) }
+    return {
+      enabled: s.hotkeysEnabled,
+      overlay: s.overlayKey,
+      priceCheck: s.priceCheckKey,
+      commands: s.chatCommands.filter((c) => c.key)
+    }
   }
 
   private pushHotkeys(): Promise<void> {
@@ -276,6 +283,35 @@ export class Controller {
     const index = PriceIndex.fromCompact(cats)
     if (!index.size) throw new Error('Could not load poe.ninja prices for this league.')
     return { index, updatedAt: status.updatedAt }
+  }
+
+  /* ---------- price check (atalho sobre um item no jogo) ---------- */
+
+  /**
+   * Índice de preços mantido em memória entre um price check e outro (montá-lo leva alguns
+   * décimos de segundo). É refeito quando o cache do poe.ninja muda e liberado após um tempo sem uso.
+   */
+  private checkCache: { league: string; updatedAt: number | null; index: PriceIndex } | null = null
+  private checkTimer: ReturnType<typeof setTimeout> | null = null
+
+  async priceCheck(text: string): Promise<PriceCheckResult> {
+    const league = this.settings.league
+    if (!league) {
+      return { ok: false, name: 'No league selected', frameType: 0, quantity: 1, divineChaos: 0, message: 'Open Stash Ledger and pick your league first.' }
+    }
+    let cache = this.checkCache
+    if (cache && cache.league === league) {
+      const status = await this.p.ninjaStatus(league).catch(() => null)
+      if (status && status.updatedAt !== cache.updatedAt) cache = null
+    } else cache = null
+    if (!cache) {
+      const { index, updatedAt } = await this.ensurePrices(league)
+      cache = { league, updatedAt, index }
+      this.checkCache = cache
+    }
+    if (this.checkTimer) clearTimeout(this.checkTimer)
+    this.checkTimer = setTimeout(() => (this.checkCache = null), 15 * 60_000)
+    return checkPrice(text, cache.index, { ...DEFAULT_PRICING, priceBaseTypes: this.settings.priceBaseTypes }, cache)
   }
 
   /* ---------- snapshots ---------- */

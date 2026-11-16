@@ -102,6 +102,15 @@ pub fn focus_lost(app: &AppHandle) {
     });
 }
 
+/// Retângulo da janela do jogo (x, y, largura, altura), em pixels físicos.
+pub fn game_rect(hwnd: isize) -> Option<(i32, i32, i32, i32)> {
+    platform::window_rect(hwnd)
+}
+
+pub fn game_in_front() -> bool {
+    platform::game_in_front()
+}
+
 #[cfg(windows)]
 mod platform {
     use windows_sys::Win32::Foundation::{HWND, RECT};

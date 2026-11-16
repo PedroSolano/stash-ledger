@@ -21,7 +21,8 @@ export function defaultSettings(env: Record<string, string | undefined> = {}): S
     alertSound: true,
     hotkeysEnabled: true,
     overlayKey: 'Shift+Space',
-    chatCommands: DEFAULT_CHAT_COMMANDS.map((c) => ({ ...c }))
+    chatCommands: DEFAULT_CHAT_COMMANDS.map((c) => ({ ...c })),
+    priceCheckKey: 'Alt+D'
   }
 }
 
@@ -74,8 +75,13 @@ export function sanitizeSettings(patch: Partial<Settings>, current: Settings): S
   if (patch.hotkeysEnabled !== undefined) next.hotkeysEnabled = !!patch.hotkeysEnabled
   // Atalho vazio desliga a função; inválido mantém o atual.
   if (patch.overlayKey !== undefined) next.overlayKey = patch.overlayKey === '' ? '' : normalizeCombo(patch.overlayKey) || current.overlayKey
-  if (patch.chatCommands !== undefined || patch.overlayKey !== undefined) {
-    next.chatCommands = sanitizeChatCommands(patch.chatCommands ?? current.chatCommands, [next.overlayKey])
+  if (patch.priceCheckKey !== undefined) {
+    const k = patch.priceCheckKey === '' ? '' : normalizeCombo(patch.priceCheckKey) || current.priceCheckKey
+    // Mesmo atalho do overlay: o do overlay vence.
+    next.priceCheckKey = k && k === next.overlayKey ? '' : k
+  }
+  if (patch.chatCommands !== undefined || patch.overlayKey !== undefined || patch.priceCheckKey !== undefined) {
+    next.chatCommands = sanitizeChatCommands(patch.chatCommands ?? current.chatCommands, [next.overlayKey, next.priceCheckKey])
   }
   return next
 }

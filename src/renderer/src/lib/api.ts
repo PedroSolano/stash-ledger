@@ -1,9 +1,16 @@
 import { listen } from '@tauri-apps/api/event'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { check, type Update } from '@tauri-apps/plugin-updater'
-import type { ProgressEvent, SnapshotDetail, StashLedgerApi, UpdateState, WindowVisibility } from '../../../shared/types'
+import type {
+  PriceCheckResult,
+  ProgressEvent,
+  SnapshotDetail,
+  StashLedgerApi,
+  UpdateState,
+  WindowVisibility
+} from '../../../shared/types'
 import { Controller } from '../../../core/controller'
-import { hideWindow, openExternal, openLog, pauseHotkeys, quitApp, tauriPlatform } from './platform'
+import { hideWindow, openExternal, openLog, pauseHotkeys, quitApp, showPriceCheck, tauriPlatform } from './platform'
 
 // Monta a window.api usada pelos componentes: controller (TS) + backend Rust + updater do Tauri.
 
@@ -37,6 +44,23 @@ void listen<ProgressEvent>('progress', (e) => progress.emit(e.payload))
 void listen('test-alert', () => void ready.then(() => controller.testAlert()).catch(() => undefined))
 // A janela vai e volta da bandeja (atalho do overlay, ícone da bandeja, botão fechar).
 void listen<WindowVisibility>('main-visible', (e) => visibility.emit(e.payload))
+// Price check: o atalho copiou um item no jogo; o preço sai do cache local do poe.ninja.
+void listen<{ text: string }>('price-check', (e) => {
+  void ready
+    .then(() => controller.priceCheck(e.payload.text))
+    .catch(
+      (err: Error): PriceCheckResult => ({
+        ok: false,
+        name: 'Price check failed',
+        frameType: 0,
+        quantity: 1,
+        divineChaos: 0,
+        message: err?.message ?? String(err)
+      })
+    )
+    .then((result) => showPriceCheck(result))
+    .catch(() => undefined)
+})
 // "Quit" na bandeja: fecha de vez, instalando antes a atualização que estiver pronta.
 void listen('quit-requested', () => void quit())
 

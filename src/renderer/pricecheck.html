@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Price check: janela transparente ao lado do cursor, sem foco nem cliques, criada pelo Rust. -->
+    <title>Stash Ledger price check</title>
+  </head>
+  <body>
+    <div id="card" class="pc" hidden>
+      <div class="pc-head">
+        <img class="pc-icon" id="icon" alt="" hidden />
+        <div class="pc-title">
+          <div class="pc-name" id="name"></div>
+          <div class="pc-base" id="base"></div>
+        </div>
+      </div>
+      <div class="pc-body">
+        <div class="pc-price" id="price"></div>
+        <div class="pc-sub" id="sub"></div>
+        <div class="pc-tags" id="tags"></div>
+        <div class="pc-msg" id="msg"></div>
+      </div>
+      <div class="pc-foot" id="foot"></div>
+    </div>
+    <script type="module" src="./src/pricecheck/main.ts"></script>
+  </body>
+</html>

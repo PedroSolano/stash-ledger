@@ -25,7 +25,17 @@ pub struct ChatCommand {
 pub struct HotkeyConfig {
     pub enabled: bool,
     pub overlay: String,
+    #[serde(default, rename = "priceCheck")]
+    pub price_check: String,
     pub commands: Vec<ChatCommand>,
+}
+
+/// Item copiado pelo atalho de price check, com a posição do cursor e a janela do jogo.
+pub struct PriceRequest {
+    pub text: String,
+    pub x: i32,
+    pub y: i32,
+    pub game: isize,
 }
 
 /// Tecla física (scan code + flag de tecla estendida) e modificadores.
@@ -130,6 +140,7 @@ pub fn parse_combo(s: &str) -> Option<Combo> {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Hit {
     ToggleMain,
+    PriceCheck,
     Chat(String),
 }
 
@@ -138,27 +149,36 @@ pub struct Bindings {
     enabled: bool,
     paused: bool,
     overlay: Option<Combo>,
+    price: Option<Combo>,
     commands: Vec<(Combo, String)>,
 }
 
 impl Bindings {
     pub fn from_config(cfg: &HotkeyConfig) -> Self {
         let overlay = parse_combo(&cfg.overlay);
+        let price = parse_combo(&cfg.price_check).filter(|p| Some(*p) != overlay);
         let mut commands: Vec<(Combo, String)> = Vec::new();
         for c in cfg.commands.iter().take(30) {
             let text: String = c.command.chars().filter(|ch| !ch.is_control()).take(120).collect();
             let text = text.trim().to_string();
             let Some(combo) = parse_combo(&c.key) else { continue };
-            if text.is_empty() || Some(combo) == overlay || commands.iter().any(|(k, _)| *k == combo) {
+            if text.is_empty() || Some(combo) == overlay || Some(combo) == price || commands.iter().any(|(k, _)| *k == combo) {
                 continue;
             }
             commands.push((combo, text));
         }
-        Bindings { enabled: cfg.enabled, paused: false, overlay, commands }
+        Bindings { enabled: cfg.enabled, paused: false, overlay, price, commands }
+    }
+
+    fn count(&self) -> usize {
+        if !self.enabled {
+            return 0;
+        }
+        self.overlay.is_some() as usize + self.price.is_some() as usize + self.commands.len()
     }
 
     fn active(&self) -> bool {
-        self.enabled && (self.overlay.is_some() || !self.commands.is_empty())
+        self.count() > 0
     }
 
     /// O que fazer com uma tecla apertada. `in_game`: Path of Exile em primeiro plano;
@@ -171,6 +191,9 @@ impl Bindings {
             return Some(Hit::ToggleMain);
         }
         if in_game {
+            if self.price == Some(c) {
+                return Some(Hit::PriceCheck);
+            }
             return self.commands.iter().find(|(k, _)| *k == c).map(|(_, t)| Hit::Chat(t.clone()));
         }
         None
@@ -181,13 +204,14 @@ static BINDINGS: RwLock<Bindings> = RwLock::new(Bindings {
     enabled: false,
     paused: false,
     overlay: None,
+    price: None,
     commands: Vec::new(),
 });
 
 /// Aplica a configuração; devolve quantos atalhos ficaram ativos.
 pub fn configure(cfg: &HotkeyConfig) -> usize {
     let b = Bindings::from_config(cfg);
-    let count = if b.enabled { b.overlay.is_some() as usize + b.commands.len() } else { 0 };
+    let count = b.count();
     let active = b.active();
     let paused = BINDINGS.read().map(|g| g.paused).unwrap_or(false);
     if let Ok(mut g) = BINDINGS.write() {
@@ -205,25 +229,31 @@ pub fn set_paused(paused: bool) {
     }
 }
 
-pub use platform::{init, set_main_window};
+pub use platform::{cursor_pos, init, set_main_window};
 
 #[cfg(not(windows))]
 mod platform {
-    pub fn init(_on_toggle: impl Fn(isize) + Send + 'static) {}
+    use super::PriceRequest;
+    pub fn init(_on_toggle: impl Fn(isize) + Send + 'static, _on_price: impl Fn(PriceRequest) + Send + 'static) {}
     pub fn set_main_window(_hwnd: isize) {}
     pub fn ensure_hook() {}
+    pub fn cursor_pos() -> (i32, i32) {
+        (0, 0)
+    }
 }
 
 #[cfg(windows)]
 mod platform {
-    use super::{Combo, Hit, BINDINGS};
+    use super::{Combo, Hit, PriceRequest, BINDINGS};
     use std::ptr::{null, null_mut};
     use std::sync::atomic::{AtomicIsize, Ordering};
     use std::sync::mpsc::{channel, Sender};
     use std::sync::{Mutex, Once, OnceLock};
-    use std::time::Duration;
-    use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
-    use windows_sys::Win32::System::DataExchange::{CloseClipboard, EmptyClipboard, GetClipboardData, OpenClipboard, SetClipboardData};
+    use std::time::{Duration, Instant};
+    use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM};
+    use windows_sys::Win32::System::DataExchange::{
+        CloseClipboard, EmptyClipboard, GetClipboardData, GetClipboardSequenceNumber, OpenClipboard, SetClipboardData,
+    };
     use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
     use windows_sys::Win32::System::Memory::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE};
     use windows_sys::Win32::System::Ole::CF_UNICODETEXT;
@@ -233,8 +263,8 @@ mod platform {
         VK_RMENU, VK_RSHIFT, VK_SHIFT,
     };
     use windows_sys::Win32::UI::WindowsAndMessaging::{
-        CallNextHookEx, GetClassNameW, GetForegroundWindow, GetMessageW, SetWindowsHookExW, HC_ACTION, KBDLLHOOKSTRUCT,
-        LLKHF_EXTENDED, MSG, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
+        CallNextHookEx, GetClassNameW, GetCursorPos, GetForegroundWindow, GetMessageW, SetWindowsHookExW, HC_ACTION,
+        KBDLLHOOKSTRUCT, LLKHF_EXTENDED, MSG, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
     };
 
     /// Marca as teclas que o próprio app envia, para o hook deixá-las passar.
@@ -244,6 +274,7 @@ mod platform {
 
     enum Action {
         Toggle(isize),
+        PriceCheck(isize),
         Chat(String),
     }
 
@@ -254,7 +285,7 @@ mod platform {
     static HELD: Mutex<Vec<(u16, bool)>> = Mutex::new(Vec::new());
 
     /// Liga a thread que executa as ações (fora do hook, que precisa responder em milissegundos).
-    pub fn init(on_toggle: impl Fn(isize) + Send + 'static) {
+    pub fn init(on_toggle: impl Fn(isize) + Send + 'static, on_price: impl Fn(PriceRequest) + Send + 'static) {
         let (tx, rx) = channel::<Action>();
         if TX.set(Mutex::new(tx)).is_err() {
             return;
@@ -263,10 +294,22 @@ mod platform {
             for a in rx {
                 match a {
                     Action::Toggle(game) => on_toggle(game),
+                    Action::PriceCheck(game) => {
+                        let (x, y) = cursor_pos();
+                        if let Some(text) = unsafe { copy_item() } {
+                            on_price(PriceRequest { text, x, y, game });
+                        }
+                    }
                     Action::Chat(text) => unsafe { send_chat(&text) },
                 }
             }
         });
+    }
+
+    pub fn cursor_pos() -> (i32, i32) {
+        let mut p = POINT { x: 0, y: 0 };
+        unsafe { GetCursorPos(&mut p) };
+        (p.x, p.y)
     }
 
     pub fn set_main_window(hwnd: isize) {
@@ -348,6 +391,7 @@ mod platform {
         let Some(hit) = hit else { return false };
         let action = match hit {
             Hit::ToggleMain => Action::Toggle(if in_game { fg as isize } else { 0 }),
+            Hit::PriceCheck => Action::PriceCheck(fg as isize),
             Hit::Chat(t) => Action::Chat(t),
         };
         if let Some(tx) = TX.get().and_then(|m| m.lock().ok()) {
@@ -448,6 +492,32 @@ mod platform {
         ok
     }
 
+    /// Ctrl+C sobre o item sob o cursor: o jogo põe a descrição do item na área de transferência.
+    /// Devolve esse texto e restaura o conteúdo anterior.
+    unsafe fn copy_item() -> Option<String> {
+        release_modifiers();
+        let saved = clipboard_text();
+        let before = GetClipboardSequenceNumber();
+        std::thread::sleep(Duration::from_millis(20));
+        send(&[key(VK_CONTROL, false, false), key(0x43, false, false), key(0x43, true, false), key(VK_CONTROL, true, false)]);
+        let start = Instant::now();
+        let mut text = None;
+        while start.elapsed() < Duration::from_millis(800) {
+            std::thread::sleep(Duration::from_millis(15));
+            if GetClipboardSequenceNumber() != before {
+                std::thread::sleep(Duration::from_millis(10));
+                text = clipboard_text();
+                break;
+            }
+        }
+        // Sem mudança: o cursor não estava sobre um item.
+        let text = text?;
+        if let Some(s) = saved {
+            set_clipboard_text(&s);
+        }
+        Some(String::from_utf16_lossy(&text))
+    }
+
     unsafe fn send_chat(text: &str) {
         release_modifiers();
         let saved = clipboard_text();
@@ -481,6 +551,7 @@ mod tests {
         HotkeyConfig {
             enabled: true,
             overlay: overlay.into(),
+            price_check: "Alt+D".into(),
             commands: cmds.iter().map(|(k, c)| ChatCommand { key: (*k).into(), command: (*c).into() }).collect(),
         }
     }
@@ -539,6 +610,20 @@ mod tests {
         assert_eq!(b.lookup(f5, false, true), None);
         // Modificadores precisam bater exatamente.
         assert_eq!(b.lookup(parse_combo("Shift+F5").unwrap(), true, false), None);
+    }
+
+    #[test]
+    fn price_check_only_in_game_and_wins_over_a_clashing_command() {
+        let b = Bindings::from_config(&cfg("Shift+Space", &[("Alt+D", "/clash"), ("F5", "/hideout")]));
+        let alt_d = parse_combo("Alt+D").unwrap();
+        assert_eq!(b.lookup(alt_d, true, false), Some(Hit::PriceCheck));
+        assert_eq!(b.lookup(alt_d, false, true), None);
+        assert_eq!(b.lookup(parse_combo("D").unwrap(), true, false), None);
+        assert_eq!(b.commands.len(), 1);
+        assert_eq!(b.count(), 3);
+        // Mesmo atalho do overlay: o price check é descartado.
+        let same = Bindings::from_config(&HotkeyConfig { price_check: "Shift+Space".into(), ..cfg("Shift+Space", &[]) });
+        assert!(same.price.is_none());
     }
 
     #[test]

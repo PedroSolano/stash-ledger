@@ -74,7 +74,8 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
       s.chatCommands.map((c, j) => (j === i ? { ...c, ...patch } : c))
     )
   // Atalho repetido (entre comandos ou com o do overlay): o segundo seria ignorado ao salvar.
-  const usedBefore = (i: number): string[] => [s.overlayKey, ...s.chatCommands.slice(0, i).map((c) => c.key)]
+  const usedBefore = (i: number): string[] => [s.overlayKey, s.priceCheckKey, ...s.chatCommands.slice(0, i).map((c) => c.key)]
+  const priceClash = !!s.priceCheckKey && s.priceCheckKey === s.overlayKey
   const conflict = (i: number): boolean => !!s.chatCommands[i].key && usedBefore(i).includes(s.chatCommands[i].key)
 
   const save = async (): Promise<void> => {
@@ -96,6 +97,7 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
         alertSound: s.alertSound,
         hotkeysEnabled: s.hotkeysEnabled,
         overlayKey: s.overlayKey,
+        priceCheckKey: s.priceCheckKey,
         chatCommands: s.chatCommands.filter((c) => c.command.trim())
       })
       onClose()
@@ -156,6 +158,21 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
               Press it in game to open this window on top of the game; press it again, press Esc or click the game to hide
               it. Closing the window keeps Stash Ledger running in the tray (alerts and auto snapshots stay on); quit from the
               tray icon.
+            </span>
+          </div>
+          <div className="field">
+            <label htmlFor="price-key">Price check</label>
+            <HotkeyInput
+              id="price-key"
+              value={s.priceCheckKey}
+              disabled={!s.hotkeysEnabled}
+              invalid={priceClash}
+              onChange={(v) => set('priceCheckKey', v)}
+            />
+            <span className="hint">
+              {priceClash
+                ? 'Same key as the overlay: pick another one.'
+                : 'Hover an item in game and press it: the poe.ninja price shows next to the cursor, and goes away when you move the mouse. Uniques, currency, gems, maps, cards, cluster jewels, ilvl 82+ bases and more. Rares need a trade search (coming later).'}
             </span>
           </div>
           <div className="field">

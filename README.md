@@ -12,7 +12,7 @@ See what your Path of Exile stash is worth, priced with **every category on poe.
 - **Per-tab breakdown** and a searchable, sortable item table.
 - **Automatic snapshots** every 5 to 60 minutes.
 - **Drop alerts**: a siren pops up over the game, with sound, when a valuable item lands in your stash (1 divine or more by default).
-- **In-game overlay**: Shift + Space opens the app on top of the game; hotkeys for chat commands (hideout, Kingsmarch, character select…).
+- **In-game overlay**: Shift + Space opens the app on top of the game; Alt + D price checks the item under the cursor; hotkeys for chat commands (hideout, Kingsmarch, character select…).
 - **Fits your screen**: the layout adapts to your window size, with a three-column view for ultrawide monitors.
 - **Light**: a few MB to download and install, low memory use, and a price cache of a couple hundred KB.
 - **Updates itself**: new versions download and install automatically, and every update is cryptographically signed.
@@ -68,6 +68,7 @@ Markers in the item table:
 Stash Ledger is meant to stay open while you play. It has no taskbar button. Closing the window only hides it: the app keeps running in the **system tray** (next to the clock), so alerts, automatic snapshots and hotkeys keep working. Click the tray icon to open it again; right-click it and choose **Quit** to close it for real.
 
 - **Shift + Space** in game opens Stash Ledger on top of the game. Press it again, press **Esc** or click the game to hide it; the game gets the focus back.
+- **Alt + D** over an item (in your inventory, stash or on the ground) shows its poe.ninja price next to the cursor; move the mouse away and it disappears. It covers what poe.ninja prices: uniques (with links and variants), currency and stacks, gems by level/quality/corruption, maps, divination cards, cluster jewels, ilvl 82+ bases and more. Rares and most magic items need a trade search, which is planned for a later update. The first check after opening the app takes a moment; after that it's instant and works offline from the local price cache.
 - **Chat commands**: by default **F5** goes to your hideout (`/hideout`), **F6** to Kingsmarch (`/kingsmarch`) and **F9** back to character select (`/exit`). Add, remove or change them in **Settings → In-game overlay & hotkeys**: click a key field and press the combination you want.
 - Hotkeys only work while Path of Exile is the focused window; everywhere else your keys behave normally. Each hotkey does one thing per key press (opens the chat, types the command, sends it), in line with GGG's rules for third-party tools. It briefly uses the clipboard and then puts your text back.
 - Like the alerts, the overlay needs **windowed** or **windowed fullscreen** mode.
@@ -92,6 +93,7 @@ Prices come from a small compressed cache on your computer. While the app is ope
 - **"Waiting for GGG rate limit"**: normal when you track many tabs. GGG limits how fast stash tabs can be read, and the app waits instead of getting you rate limited.
 - **Where did the app go?** Closing the window hides it in the tray (the icon may be under the **^** arrow next to the clock). Click it to bring the window back.
 - **Hotkeys do nothing in game**: check that they're turned on in Settings, that the game is in windowed or windowed fullscreen mode, and that no other tool uses the same keys. If you run the game as administrator, Windows doesn't let normal apps see its keys; run both the same way.
+- **Price check shows nothing**: make sure the mouse is over the item when you press the key, and that you picked your league in the app. "No poe.ninja price" on a rare is expected for now.
 - **A chat command typed nothing**: the commands assume the chat opens with Enter (the game's default).
 - **"N failed" on the Priced items card**: some items couldn't be read. Go to **Settings → Open error log** and attach the file to a [new issue](https://github.com/PedroSolano/stash-ledger/issues). The log never contains your POESESSID.
 

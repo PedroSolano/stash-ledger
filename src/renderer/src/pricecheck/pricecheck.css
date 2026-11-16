@@ -1,0 +1,157 @@
+/* Price check: só o cartão aparece; o resto da janela é transparente. */
+:root {
+  --gold: #c9aa71;
+  --gold-bright: #ecd49b;
+  --bronze: #7a6240;
+  --text: #d9d0bf;
+  --text-2: #a99f8d;
+  --muted: #7f786a;
+  --warn: #d9a441;
+  --r-normal: #c8c8c8;
+  --r-magic: #8888ff;
+  --r-rare: #ffff77;
+  --r-unique: #af6025;
+  --r-gem: #1ba29b;
+  --r-currency: #aa9e82;
+  --r-card: #0ebaff;
+}
+
+html,
+body {
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  cursor: default;
+}
+
+.pc {
+  box-sizing: border-box;
+  width: 340px;
+  margin: 6px;
+  font-family: 'Alegreya Sans', 'Segoe UI', system-ui, sans-serif;
+  color: var(--text);
+  background: linear-gradient(180deg, rgba(24, 19, 13, 0.97), rgba(10, 8, 6, 0.97));
+  border: 1px solid var(--bronze);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 2px rgba(201, 170, 113, 0.14),
+    0 6px 18px rgba(0, 0, 0, 0.7);
+}
+
+.pc[hidden],
+.pc [hidden] {
+  display: none !important;
+}
+
+.pc.in {
+  animation: pop 140ms ease-out;
+}
+
+.pc-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 8px;
+  background: linear-gradient(180deg, rgba(201, 170, 113, 0.1), transparent);
+  border-bottom: 1px solid rgba(122, 98, 64, 0.55);
+}
+
+.pc-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex: none;
+}
+
+.pc-title {
+  min-width: 0;
+}
+
+.pc-name {
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.2;
+  text-shadow: 0 1px 2px #000;
+  overflow-wrap: anywhere;
+}
+
+.pc-base {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.pc-body {
+  padding: 10px 14px 8px;
+}
+
+.pc-price {
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1.15;
+  color: var(--gold-bright);
+  text-shadow:
+    0 0 10px rgba(236, 212, 155, 0.3),
+    0 1px 2px #000;
+}
+
+.pc-sub {
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.pc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.pc-tag {
+  padding: 1px 8px;
+  font-family: 'Alegreya SC', Georgia, serif;
+  font-size: 13px;
+  color: var(--text-2);
+  border: 1px solid rgba(122, 98, 64, 0.7);
+  background: rgba(201, 170, 113, 0.06);
+}
+
+.pc-tag.warn {
+  color: var(--warn);
+  border-color: rgba(217, 164, 65, 0.55);
+}
+
+.pc-msg {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.pc-foot {
+  padding: 6px 14px 8px;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid rgba(122, 98, 64, 0.35);
+}
+
+.r-normal { color: var(--r-normal); }
+.r-magic { color: var(--r-magic); }
+.r-rare { color: var(--r-rare); }
+.r-unique { color: var(--r-unique); }
+.r-gem { color: var(--r-gem); }
+.r-currency { color: var(--r-currency); }
+.r-card { color: var(--r-card); }
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

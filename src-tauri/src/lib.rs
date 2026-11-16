@@ -7,6 +7,7 @@ mod logfile;
 mod mainwin;
 mod ninja;
 mod oauth;
+mod pricewin;
 mod ratelimit;
 mod secrets;
 mod store;
@@ -25,7 +26,7 @@ use tokio::sync::{oneshot, Mutex};
 /// Argumentos do WebView2. Precisam ser IGUAIS em todas as janelas (todas compartilham o mesmo
 /// ambiente): sem GPU (menos memória) e áudio sem clique prévio (som da sirene no overlay).
 /// Manter em sincronia com app.windows[0].additionalBrowserArgs no tauri.conf.json.
-const BROWSER_ARGS: &str = "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-gpu --autoplay-policy=no-user-gesture-required";
+pub(crate) const BROWSER_ARGS: &str = "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-gpu --autoplay-policy=no-user-gesture-required";
 const OVERLAY_W: f64 = 380.0;
 const OVERLAY_H: f64 = 360.0;
 const SESSION_KEY: &str = "session";
@@ -468,7 +469,7 @@ fn ninja_prices(state: State<'_, AppState>, league: String) -> Option<Value> {
 /* ---------- overlay de alerta (sirene) ---------- */
 
 /// Mostra a janela por cima de tudo SEM ativá-la: o jogo continua com o foco do teclado.
-fn show_no_activate(w: &tauri::WebviewWindow) {
+pub(crate) fn show_no_activate(w: &tauri::WebviewWindow) {
     #[cfg(windows)]
     {
         use windows_sys::Win32::UI::WindowsAndMessaging::{
@@ -654,7 +655,8 @@ pub fn run() {
             app.manage(state);
             build_tray(app)?;
             let handle = app.handle().clone();
-            hotkeys::init(move |game| mainwin::toggle(&handle, game));
+            let handle2 = app.handle().clone();
+            hotkeys::init(move |game| mainwin::toggle(&handle, game), move |req| pricewin::request(&handle2, req));
             #[cfg(windows)]
             if let Some(w) = app.get_webview_window("main") {
                 if let Ok(h) = w.hwnd() {
@@ -676,8 +678,10 @@ pub fn run() {
                 tauri::WindowEvent::Focused(false) => mainwin::focus_lost(w.app_handle()),
                 // Saindo de vez: fecha também um alerta que esteja na tela.
                 tauri::WindowEvent::Destroyed => {
-                    if let Some(o) = w.app_handle().get_webview_window("overlay") {
-                        let _ = o.close();
+                    for label in ["overlay", "price"] {
+                        if let Some(o) = w.app_handle().get_webview_window(label) {
+                            let _ = o.close();
+                        }
                     }
                 }
                 _ => {}
@@ -710,7 +714,10 @@ pub fn run() {
             hotkeys_configure,
             hotkeys_pause,
             main_hide,
-            app_quit
+            app_quit,
+            pricewin::pricecheck_show,
+            pricewin::pricecheck_ready,
+            pricewin::pricecheck_visible
         ])
         .run(tauri::generate_context!())
         .expect("error while running Stash Ledger");

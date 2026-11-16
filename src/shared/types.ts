@@ -159,6 +159,30 @@ export interface Settings {
   overlayKey: string
   /** Atalho → comando de chat (/hideout, /kingsmarch…). */
   chatCommands: ChatCommand[]
+  /** Price check do item sob o cursor (padrão Alt+D; vazio = desligado). */
+  priceCheckKey: string
+}
+
+/** Resultado do price check (atalho sobre um item no jogo), mostrado na janelinha ao lado do cursor. */
+export interface PriceCheckResult {
+  /** false: o texto copiado não era um item, ou não havia preços carregados. */
+  ok: boolean
+  name: string
+  base?: string
+  frameType: number
+  quantity: number
+  unitChaos?: number
+  totalChaos?: number
+  divineChaos: number
+  category?: string
+  confidence?: Confidence
+  approximate?: boolean
+  detail?: string
+  icon?: string
+  /** Explicação quando não há preço. */
+  message?: string
+  league?: string
+  pricesUpdatedAt?: number | null
 }
 
 export interface WindowVisibility {
@@ -170,6 +194,7 @@ export interface WindowVisibility {
 export interface HotkeyConfig {
   enabled: boolean
   overlay: string
+  priceCheck: string
   commands: ChatCommand[]
 }
 

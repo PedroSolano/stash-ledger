@@ -16,7 +16,11 @@ export default defineConfig({
     // Duas páginas: o app e o overlay de alerta (janela separada, criada só quando há alerta).
     rollupOptions: {
       // Relativo à pasta do projeto (os scripts npm e o Tauri rodam o build a partir dela).
-      input: { main: 'src/renderer/index.html', overlay: 'src/renderer/overlay.html' }
+      input: {
+        main: 'src/renderer/index.html',
+        overlay: 'src/renderer/overlay.html',
+        pricecheck: 'src/renderer/pricecheck.html'
+      }
     }
   }
 })

@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "overlay",
-  "description": "Overlay de alerta (sirene): só escuta o evento de novo alerta.",
-  "windows": ["overlay"],
+  "description": "Janelas por cima do jogo (sirene de alerta, price check): só escutam eventos do backend.",
+  "windows": ["overlay", "price"],
   "permissions": ["core:event:default"]
 }
