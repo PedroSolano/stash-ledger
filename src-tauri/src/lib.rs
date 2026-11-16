@@ -487,6 +487,20 @@ pub(crate) fn show_no_activate(w: &tauri::WebviewWindow) {
     let _ = w.show();
 }
 
+/// Esconde uma janela mostrada com `show_no_activate`. Precisa ser pela mesma via (Win32): como o
+/// Tauri não ficou sabendo que ela apareceu, o `hide()` dele acha que já está escondida e não faz nada.
+pub(crate) fn hide_raw(w: &tauri::WebviewWindow) {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_HIDE};
+        if let Ok(hwnd) = w.hwnd() {
+            unsafe { ShowWindow(hwnd.0 as windows_sys::Win32::Foundation::HWND, SW_HIDE) };
+            return;
+        }
+    }
+    let _ = w.hide();
+}
+
 /// Canto superior esquerdo do monitor principal (onde o jogo costuma rodar), com 16 px de margem.
 fn overlay_position(app: &AppHandle) -> (f64, f64) {
     if let Ok(Some(m)) = app.primary_monitor() {

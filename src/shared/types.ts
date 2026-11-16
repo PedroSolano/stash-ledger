@@ -181,6 +181,8 @@ export interface PriceCheckResult {
   icon?: string
   /** Explicação quando não há preço. */
   message?: string
+  /** Único não identificado: os únicos possíveis dessa base, do mais caro ao mais barato. */
+  candidates?: { name: string; chaos: number; confidence: Confidence; detail?: string; icon?: string }[]
   league?: string
   pricesUpdatedAt?: number | null
 }

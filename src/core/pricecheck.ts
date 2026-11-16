@@ -1,6 +1,6 @@
 import type { PoeItem, PriceCheckResult } from '../shared/types'
 import { magicBaseCandidates, parseItemText } from './pricing/clipboard'
-import type { PriceIndex } from './pricing/priceIndex'
+import { norm, type PriceEntry, type PriceIndex } from './pricing/priceIndex'
 import { priceItem, type PriceMatch, type PricingOptions } from './pricing/priceItem'
 
 /** Nome para mostrar: "Kaom's Heart" / "Divine Orb" / base do raro. */
@@ -16,6 +16,26 @@ function priceMagic(item: PoeItem, idx: PriceIndex, opts: PricingOptions): Price
     if (m) return m
   }
   return null
+}
+
+/** Únicos possíveis para um único não identificado dessa base (um por nome, a variante mais listada). */
+function uniqueCandidates(item: PoeItem, idx: PriceIndex, opts: PricingOptions): PriceCheckResult['candidates'] {
+  const list = idx.uniqueByBase.get(norm(item.baseType))?.filter((e) => !e.links && !e.mutated?.length) ?? []
+  const byName = new Map<string, PriceEntry>()
+  for (const e of list) {
+    const cur = byName.get(e.name)
+    if (!cur || e.listings > cur.listings) byName.set(e.name, e)
+  }
+  return [...byName.values()]
+    .sort((a, b) => b.chaos - a.chaos)
+    .slice(0, 8)
+    .map((e) => ({
+      name: e.name,
+      chaos: e.chaos,
+      confidence: e.listings < opts.lowConfidenceListings ? ('low' as const) : ('high' as const),
+      detail: e.variant,
+      icon: e.icon
+    }))
 }
 
 /** Precifica o texto copiado do jogo (Ctrl+C) com o índice do poe.ninja. */
@@ -39,6 +59,16 @@ export function checkPrice(
     base: item.name ? item.typeLine : undefined,
     frameType: item.frameType ?? 0,
     quantity
+  }
+  if (item.frameType === 3 && !item.identified) {
+    const candidates = uniqueCandidates(item, idx, opts)
+    if (candidates?.length) {
+      result.candidates = candidates
+      result.message =
+        candidates.length > 1
+          ? `Unidentified: one of ${candidates.length} uniques on this base.`
+          : 'Unidentified: the only unique on this base.'
+    }
   }
   const match = priceItem(item, idx, opts) ?? (item.frameType === 1 ? priceMagic(item, idx, opts) : null)
   if (!match) {

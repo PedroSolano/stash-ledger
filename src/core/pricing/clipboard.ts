@@ -45,11 +45,46 @@ const PROPERTIES = new Set(['Level', 'Quality', 'Map Tier', 'Experience', 'Area 
 /** Linhas soltas que são marcadores, não modificadores. */
 const FLAGS = new Set(['Corrupted', 'Unidentified', 'Mirrored', 'Split', 'Synthesised Item', 'Fractured Item', 'Foulborn'])
 const MOD_SUFFIX = /\s+\((implicit|enchant|crafted|fractured|mutated|scourge|crucible)\)$/i
+/** Cabeçalho de modificador do formato avançado (padrão desde a 3.29):
+ *  { Prefix Modifier "Fecund" (Tier: 2) — Life }  /  { Implicit Modifier — Elemental, Resistance } */
+const MOD_HEADER = /^\{\s*(?<type>[^"—}]+?)(?:\s+"(?<name>[^"]*)")?(?:\s+\(Tier: (?<tier>\d+)\))?(?:\s+\(Rank: (?<rank>\d+)\))?\s*(?:—\s*(?<tags>[^}]*))?\}$/
+/** Valor com faixa de roll: "+60(60-69)" → 60 (o motor de preços casa o texto sem as faixas). */
+const ROLL_RANGE = /([+-]?\d+(?:\.\d+)?)\(([^)-]*)(?:-([^)]+))?\)/g
+
+export type ModKind = 'explicit' | 'implicit' | 'enchant' | 'crafted' | 'fractured' | 'mutated'
+
+/** Um modificador com o que o formato avançado informa (para filtros da busca na trade). */
+export interface ParsedMod {
+  kind: ModKind
+  /** Linhas do mod, sem faixas de roll. */
+  lines: string[]
+  /** Linhas originais, com faixas "valor(min-max)". */
+  raw: string[]
+  generation?: 'prefix' | 'suffix'
+  name?: string
+  tier?: number
+  tags: string[]
+}
 
 export interface ParsedItem {
   item: PoeItem
   itemClass?: string
   rarity: string
+  mods: ParsedMod[]
+}
+
+function kindFromHeader(type: string): { kind: ModKind; generation?: 'prefix' | 'suffix' } {
+  const generation = /prefix/i.test(type) ? 'prefix' : /suffix/i.test(type) ? 'suffix' : undefined
+  if (/implicit/i.test(type)) return { kind: 'implicit' }
+  if (/fractured/i.test(type)) return { kind: 'fractured', generation }
+  if (/crafted/i.test(type)) return { kind: 'crafted', generation }
+  if (/foulborn/i.test(type)) return { kind: 'mutated' }
+  if (/enchant/i.test(type)) return { kind: 'enchant' }
+  return { kind: 'explicit', generation }
+}
+
+export function stripRollRanges(line: string): string {
+  return line.replace(/\(\)/g, '').replace(ROLL_RANGE, '$1')
 }
 
 function toInt(s: string): number {
@@ -99,6 +134,15 @@ export function parseItemText(text: string): ParsedItem | null {
     identified: true
   }
   const properties: PoeItemProperty[] = []
+  const mods: ParsedMod[] = []
+  const KEY: Record<ModKind, keyof PoeItem> = {
+    explicit: 'explicitMods',
+    implicit: 'implicitMods',
+    enchant: 'enchantMods',
+    crafted: 'craftedMods',
+    fractured: 'fracturedMods',
+    mutated: 'mutatedMods'
+  }
   const add = (key: keyof PoeItem, mod: string): void => {
     const list = ((item as unknown as Record<string, string[] | undefined>)[key] ??= [])
     list.push(mod)
@@ -107,7 +151,42 @@ export function parseItemText(text: string): ParsedItem | null {
   for (const section of sections.slice(1)) {
     // Requisitos ("Level: 68" aqui é nível exigido, não nível de gema).
     if (section[0] === 'Requirements:' || section[0]?.startsWith('Requires ')) continue
-    for (const line of section) {
+    // Mod atual do formato avançado (as linhas seguintes ao cabeçalho pertencem a ele).
+    let current: ParsedMod | null = null
+    let reminder = false
+    for (const rawLine of section) {
+      const header = MOD_HEADER.exec(rawLine)
+      if (header?.groups) {
+        const g = header.groups
+        const { kind, generation } = kindFromHeader(g.type.trim())
+        current = {
+          kind,
+          generation,
+          name: g.name || undefined,
+          tier: g.tier ? Number(g.tier) : undefined,
+          tags: g.tags ? g.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+          lines: [],
+          raw: []
+        }
+        mods.push(current)
+        continue
+      }
+      // Texto explicativo entre parênteses (pode ocupar várias linhas): não é modificador.
+      if (rawLine.startsWith('(')) reminder = true
+      if (reminder) {
+        if (rawLine.endsWith(')')) reminder = false
+        continue
+      }
+      const line = stripRollRanges(rawLine)
+      if (current) {
+        const suffix = MOD_SUFFIX.exec(line)
+        const text = line.replace(MOD_SUFFIX, '')
+        const kind = (suffix?.[1].toLowerCase() as ModKind | undefined) ?? current.kind
+        current.lines.push(text)
+        current.raw.push(rawLine.replace(MOD_SUFFIX, ''))
+        add(KEY[kind] ?? 'explicitMods', text)
+        continue
+      }
       if (FLAGS.has(line)) {
         if (line === 'Corrupted') item.corrupted = true
         if (line === 'Unidentified') item.identified = false
@@ -142,6 +221,9 @@ export function parseItemText(text: string): ParsedItem | null {
       }
       const suffix = MOD_SUFFIX.exec(line)
       const mod = line.replace(MOD_SUFFIX, '')
+      // Formato antigo ou mod sem cabeçalho (encantamentos, por exemplo): o tipo vem do sufixo.
+      const kind = (suffix?.[1].toLowerCase() ?? 'explicit') as ModKind
+      if (kind in KEY) mods.push({ kind, lines: [mod], raw: [rawLine.replace(MOD_SUFFIX, '')], tags: [] })
       switch (suffix?.[1].toLowerCase()) {
         case 'implicit':
           add('implicitMods', mod)
@@ -171,7 +253,7 @@ export function parseItemText(text: string): ParsedItem | null {
   if (itemClass === 'Maps' || properties.some((p) => p.name === 'Map Tier')) {
     item.baseType = item.baseType.replace(/^(Blighted|Blight-ravaged)\s+/i, '')
   }
-  return { item, itemClass, rarity }
+  return { item, itemClass, rarity, mods }
 }
 
 /**

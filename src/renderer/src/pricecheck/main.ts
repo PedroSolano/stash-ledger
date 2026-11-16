@@ -29,9 +29,11 @@ function render(r: PriceCheckResult): void {
 
   const priced = r.ok && r.unitChaos !== undefined
   const div = r.divineChaos
+  const several = (r.candidates?.length ?? 0) > 1
   if (priced) {
     const total = r.totalChaos ?? r.unitChaos!
-    text('price', `${r.approximate ? '≈ ' : ''}${price(total, div)}`)
+    // Não identificado com vários únicos possíveis: o preço mostrado é o piso (o mais barato).
+    text('price', `${several ? 'from ' : r.approximate ? '≈ ' : ''}${price(total, div)}`)
     const parts: string[] = []
     if (r.quantity > 1) parts.push(`${price(r.unitChaos!, div)} each`)
     if (div && total >= div) parts.push(chaosText(total))
@@ -50,7 +52,7 @@ function render(r: PriceCheckResult): void {
     s.textContent = label
     tags.appendChild(s)
   }
-  if (priced) {
+  if (priced && !several) {
     if (r.detail) tag(r.detail)
     if (r.category) tag(categoryLabel(r.category))
     if (r.confidence === 'low') tag('low confidence', 'warn')
@@ -58,7 +60,25 @@ function render(r: PriceCheckResult): void {
   }
   tags.hidden = !tags.childElementCount
 
-  text('msg', priced ? undefined : r.message)
+  text('msg', priced && !r.candidates?.length ? undefined : r.message)
+
+  // Únicos possíveis (não identificado), do mais caro ao mais barato.
+  const cands = $('cands')
+  cands.replaceChildren()
+  for (const c of r.candidates ?? []) {
+    const row = document.createElement('div')
+    row.className = 'pc-cand'
+    const n = document.createElement('span')
+    n.className = 'r-unique'
+    n.textContent = c.detail ? `${c.name} (${c.detail})` : c.name
+    const p = document.createElement('span')
+    p.className = `pc-cand-price${c.confidence === 'low' ? ' warn' : ''}`
+    p.textContent = price(c.chaos, div)
+    if (c.confidence === 'low') p.title = 'low confidence'
+    row.append(n, p)
+    cands.appendChild(row)
+  }
+  cands.hidden = !cands.childElementCount
   text(
     'foot',
     r.league ? `poe.ninja · ${r.league}${r.pricesUpdatedAt ? ` · updated ${ago(r.pricesUpdatedAt)}` : ''}` : undefined

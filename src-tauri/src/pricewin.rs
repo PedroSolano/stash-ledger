@@ -21,8 +21,10 @@ const MAX_SHOW: Duration = Duration::from_secs(30);
 static PENDING: Mutex<Option<Value>> = Mutex::new(None);
 /// Cursor e janela do jogo no momento do atalho.
 static ORIGIN: Mutex<(i32, i32, isize)> = Mutex::new((0, 0, 0));
-/// Cada price check invalida o vigia de "esconder" do anterior.
+/// Cada price check (e cada "esconder") invalida o anterior: um resultado atrasado nunca reaparece.
 static GEN: AtomicU64 = AtomicU64::new(0);
+/// Geração do price check cujo resultado a página está desenhando.
+static SHOWING: AtomicU64 = AtomicU64::new(0);
 
 /// O atalho copiou um item: a interface principal (que tem o motor de preços) calcula o preço
 /// e chama `pricecheck_show` com o resultado.
@@ -48,13 +50,12 @@ fn place(w: &WebviewWindow, x: i32, y: i32, game: isize) {
 pub fn hide(app: &AppHandle) {
     GEN.fetch_add(1, Ordering::SeqCst);
     if let Some(w) = app.get_webview_window(LABEL) {
-        let _ = w.hide();
+        crate::hide_raw(&w);
     }
 }
 
 /// Esconde quando o mouse se afasta, o jogo sai da frente ou o tempo acaba.
-fn watch(app: &AppHandle, x: i32, y: i32) {
-    let gen = GEN.fetch_add(1, Ordering::SeqCst) + 1;
+fn watch(app: &AppHandle, gen: u64, x: i32, y: i32) {
     let app = app.clone();
     std::thread::spawn(move || {
         let start = Instant::now();
@@ -78,7 +79,10 @@ fn watch(app: &AppHandle, x: i32, y: i32) {
 #[tauri::command]
 pub async fn pricecheck_show(app: AppHandle, result: Value) -> Result<(), String> {
     let (x, y, game) = *ORIGIN.lock().unwrap();
+    SHOWING.store(GEN.fetch_add(1, Ordering::SeqCst) + 1, Ordering::SeqCst);
     if let Some(w) = app.get_webview_window(LABEL) {
+        // Some o resultado anterior enquanto o novo é desenhado.
+        crate::hide_raw(&w);
         place(&w, x, y, game);
         // A página desenha e chama `pricecheck_visible`, que mostra a janela.
         app.emit_to(LABEL, "price", result).map_err(|e| e.to_string())?;
@@ -101,7 +105,6 @@ pub async fn pricecheck_show(app: AppHandle, result: Value) -> Result<(), String
         let _ = w.set_ignore_cursor_events(true);
         place(&w, x, y, game);
     }
-    watch(&app, x, y);
     Ok(())
 }
 
@@ -111,10 +114,17 @@ pub fn pricecheck_ready() -> Option<Value> {
     PENDING.lock().unwrap().take()
 }
 
-/// A página desenhou o resultado: mostra a janela sem tirar o foco do jogo.
+/// A página desenhou o resultado: mostra a janela sem tirar o foco do jogo e começa a vigiar o
+/// mouse. Se outro price check (ou um "esconder") veio no meio tempo, não mostra nada.
 #[tauri::command]
 pub fn pricecheck_visible(app: AppHandle) {
+    let gen = SHOWING.load(Ordering::SeqCst);
+    if GEN.load(Ordering::SeqCst) != gen {
+        return;
+    }
     if let Some(w) = app.get_webview_window(LABEL) {
         crate::show_no_activate(&w);
+        let (x, y, _) = *ORIGIN.lock().unwrap();
+        watch(&app, gen, x, y);
     }
 }

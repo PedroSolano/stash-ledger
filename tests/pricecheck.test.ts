@@ -28,7 +28,10 @@ const idx = PriceIndex.build({
       lines: [
         line({ name: 'The Covenant', baseType: 'Spidersilk Robe', chaosValue: 20 }),
         line({ name: 'The Covenant', baseType: 'Spidersilk Robe', links: 6, chaosValue: 990 }),
-        line({ name: "Kaom's Heart", baseType: 'Glorious Plate', chaosValue: 19 })
+        line({ name: "Kaom's Heart", baseType: 'Glorious Plate', chaosValue: 19 }),
+        line({ name: 'Doppelgänger Guise', baseType: 'Sadist Garb', chaosValue: 3 }),
+        line({ name: 'Inpulsa\'s Broken Heart', baseType: 'Sadist Garb', chaosValue: 15 }),
+        line({ name: 'Inpulsa\'s Broken Heart', baseType: 'Sadist Garb', links: 6, chaosValue: 400 })
       ]
     },
     SkillGem: {
@@ -161,6 +164,72 @@ describe('price check pelo texto copiado do jogo', () => {
     const unid = parseItemText(t('Item Class: Body Armours', 'Rarity: Unique', 'Glorious Plate', '--------', 'Unidentified'))!
     expect(unid.item.identified).toBe(false)
     expect(unid.item.baseType).toBe('Glorious Plate')
+  })
+
+  it('formato avançado (3.29+): cabeçalhos de mod, faixas de roll e texto explicativo', () => {
+    const text = t(
+      'Item Class: Helmets',
+      'Rarity: Rare',
+      'Gloom Crown',
+      'Archdemon Crown',
+      '--------',
+      'Item Level: 85',
+      '--------',
+      '{ Implicit Modifier — Gem }',
+      '+1(1-2) to Level of Socketed Gems (implicit)',
+      '--------',
+      '{ Prefix Modifier "Fecund" (Tier: 2) — Life }',
+      '+90(90-99) to maximum Life',
+      '{ Suffix Modifier "of the Ice" (Tier: 1) — Elemental, Cold, Resistance }',
+      '+46(46-48)% to Cold Resistance',
+      '{ Master Crafted Suffix Modifier "of Craft" (Rank: 2) }',
+      '20(18-21)% increased Rarity of Items found',
+      '{ Fractured Prefix Modifier "Resplendent" (Tier: 1) — Defences }',
+      '-5(-10--5)% to Chaos Resistance',
+      '(Reminder text that spans',
+      'two lines)'
+    )
+    const p = parseItemText(text)!
+    expect(p.item.implicitMods).toEqual(['+1 to Level of Socketed Gems'])
+    expect(p.item.explicitMods).toEqual(['+90 to maximum Life', '+46% to Cold Resistance'])
+    expect(p.item.craftedMods).toEqual(['20% increased Rarity of Items found'])
+    expect(p.item.fracturedMods).toEqual(['-5% to Chaos Resistance'])
+    const life = p.mods.find((m) => m.lines[0] === '+90 to maximum Life')!
+    expect(life).toMatchObject({ kind: 'explicit', generation: 'prefix', name: 'Fecund', tier: 2, tags: ['Life'] })
+    expect(life.raw).toEqual(['+90(90-99) to maximum Life'])
+    expect(p.mods.find((m) => m.kind === 'crafted')?.generation).toBe('suffix')
+    expect(p.mods.some((m) => m.lines.some((l) => l.includes('Reminder')))).toBe(false)
+  })
+
+  it('formato avançado: único com 6 links e mods com faixa ainda casa o preço', () => {
+    const r = check(
+      t(
+        'Item Class: Body Armours',
+        'Rarity: Unique',
+        'The Covenant',
+        'Spidersilk Robe',
+        '--------',
+        'Sockets: B-B-B-B-B-B',
+        '--------',
+        'Item Level: 84',
+        '--------',
+        '{ Unique Modifier — Gem }',
+        'Socketed Gems are Supported by Level 29(29-29) Blood Magic',
+        '{ Unique Modifier — Life }',
+        '+80(60-80) to maximum Life'
+      )
+    )
+    expect(r.unitChaos).toBe(990)
+  })
+
+  it('único não identificado lista os únicos possíveis da base', () => {
+    const r = check(t('Item Class: Body Armours', 'Rarity: Unique', 'Sadist Garb', '--------', 'Item Level: 80', '--------', 'Unidentified'))
+    expect(r.candidates?.map((c) => [c.name, c.chaos])).toEqual([
+      ["Inpulsa's Broken Heart", 15],
+      ['Doppelgänger Guise', 3]
+    ])
+    expect(r.unitChaos).toBe(3)
+    expect(r.message).toMatch(/one of 2 uniques/)
   })
 
   it('base de item mágico', () => {
