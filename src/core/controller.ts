@@ -3,6 +3,7 @@ import type {
   AuthStatus,
   DropAlert,
   PoeItem,
+  PricedItem,
   PriceStatus,
   ProgressEvent,
   Settings,
@@ -284,7 +285,9 @@ export class Controller {
   async testAlert(): Promise<void> {
     const league = this.settings.league
     const latest = league ? await this.getLatest(league).catch(() => null) : null
-    const top = latest?.items.find((i) => i.counted && i.unitChaos > 0)
+    const top = latest?.items
+      .filter((i) => i.counted && i.unitChaos > 0)
+      .reduce<PricedItem | undefined>((best, i) => (!best || i.unitChaos > best.unitChaos ? i : best), undefined)
     const divine = latest?.divineChaos || 140
     const item = top
       ? { name: top.name, detail: top.detail, icon: top.icon, frameType: top.frameType, quantity: 1, unitChaos: top.unitChaos, totalChaos: top.unitChaos }

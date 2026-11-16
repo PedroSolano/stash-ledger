@@ -8,7 +8,9 @@ const W = 160
 const H = 160
 const FRAMES = 16
 const SS = 3 // supersampling por eixo (suavização)
-const BG = [18, 13, 8] // fundo do painel do overlay: bordas suavizadas se misturam a ele
+// Fundo do cartão do overlay (#120d08). O GIF é opaco nessa cor: GIF só tem transparência de
+// 1 bit, então feixes e brilho ficariam com borda escura por cima do jogo.
+const BG = [18, 13, 8]
 
 const clamp = (x) => Math.max(0, Math.min(1, x))
 const mix = (a, b, t) => a + (b - a) * t
@@ -88,11 +90,7 @@ for (let f = 0; f < FRAMES; f++) {
       const n = SS * SS
       const alpha = a / n
       const i = (py * W + px) * 4
-      if (alpha < 0.08) {
-        rgba[i + 3] = 0 // transparente
-        continue
-      }
-      // Pré-mistura com o fundo do painel (GIF só tem transparência de 1 bit).
+      // Mistura com o fundo do cartão.
       const cr = a ? r / a : 0
       const cg = a ? g / a : 0
       const cb = a ? b / a : 0
@@ -102,16 +100,9 @@ for (let f = 0; f < FRAMES; f++) {
       rgba[i + 3] = 255
     }
   }
-  const palette = quantize(rgba, 128, { format: 'rgba4444', oneBitAlpha: true })
-  const index = applyPalette(rgba, palette, 'rgba4444')
-  const transparentIndex = palette.findIndex((c) => c[3] === 0)
-  gif.writeFrame(index, W, H, {
-    palette,
-    delay: 55,
-    transparent: transparentIndex >= 0,
-    transparentIndex: Math.max(0, transparentIndex),
-    dispose: 2
-  })
+  const palette = quantize(rgba, 128)
+  const index = applyPalette(rgba, palette)
+  gif.writeFrame(index, W, H, { palette, delay: 55 })
 }
 gif.finish()
 const out = new URL('../src/renderer/public/siren.gif', import.meta.url)
