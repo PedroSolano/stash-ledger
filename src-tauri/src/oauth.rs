@@ -234,7 +234,8 @@ mod tests {
     async fn full_flow_against_local_server() {
         // Simula o navegador (redirecionado para o servidor local) e checa que state errado é recusado.
         let http = reqwest::Client::new();
-        let port = 40_000 + (std::process::id() % 20_000) as u16;
+        // Porta livre escolhida pelo sistema (no Windows há faixas reservadas que recusam bind).
+        let port = std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
         let redirect = format!("http://127.0.0.1:{port}/callback");
         let (_tx, rx) = oneshot::channel();
         let r = redirect.clone();
@@ -252,6 +253,7 @@ mod tests {
             rx,
         )
         .await;
-        assert!(flow.unwrap_err().contains("invalid state"));
+        let err = flow.unwrap_err();
+        assert!(err.contains("invalid state"), "unexpected error: {err}");
     }
 }
