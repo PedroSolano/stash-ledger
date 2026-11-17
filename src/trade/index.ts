@@ -48,9 +48,19 @@ export interface PrepareOptions {
   merchantOnly?: boolean
 }
 
+/** Palavras-chave com dica no jogo podem vir marcadas: "[Faster|faster]" → "faster", "[Faster]" → "Faster". */
+export function cleanKeywordMarkup(text: string): string {
+  return text.replace(/\[([^\]|\n]+)\|([^\]\n]+)\]/g, '$2').replace(/\[([^\]|\n]+)\]/g, '$1')
+}
+
+/** Mods que o parser não reconheceu (mostrados na janela como "não pesquisáveis"). */
+export function unknownMods(item: ParsedItem): Array<{ text: string; type: string }> {
+  return item.unknownModifiers.map((m) => ({ text: m.text, type: String(m.type) }))
+}
+
 /** Lê o texto copiado do jogo e monta os filtros como o Awakened monta. */
 export function prepareCheck(text: string, opts: PrepareOptions): PreparedCheck | { error: string } {
-  const parsed = parseClipboard(text)
+  const parsed = parseClipboard(cleanKeywordMarkup(text))
   if (parsed.isErr()) return { error: parsed.error }
   return prepareItem(parsed.value, opts)
 }

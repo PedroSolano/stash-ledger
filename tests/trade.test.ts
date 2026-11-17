@@ -10,6 +10,7 @@ import {
   setTradeTransport,
   searchTrade,
   uniqueCandidates,
+  unknownMods,
   type PreparedCheck
 } from '../src/trade'
 
@@ -110,6 +111,42 @@ describe('busca na trade (código do Awakened)', () => {
     expect(cands.map((c) => c.refName)).toContain('Headhunter')
     const hh = identifyAs(cands.find((c) => c.refName === 'Headhunter')!, item)
     expect(hh.info.refName).toBe('Headhunter')
+  })
+
+  it('raro com palavra-chave do jogo ("Faster"): todos os mods viram filtro', () => {
+    const jewel = (faster: string) =>
+      t(
+        'Item Class: Jewels',
+        'Rarity: Rare',
+        'Fulgent Wisdom',
+        'Cobalt Jewel',
+        '--------',
+        'Item Level: 80',
+        '--------',
+        '{ Prefix Modifier "Throwing" (Tier: 1) — Speed }',
+        '8(6-8)% increased Trap Throwing Speed',
+        '{ Prefix Modifier "Toxic" (Tier: 1) — Damage, Chaos, Ailment }',
+        '18(16-20)% increased Damage with Poison',
+        '{ Suffix Modifier "of Efficiency" (Tier: 1) — Mana }',
+        '12(10-14)% increased Mana Cost Efficiency',
+        '{ Suffix Modifier "of Decay" (Tier: 1) — Damage, Ailment }',
+        `Damaging Ailments deal damage 6(4-6)% ${faster}`
+      )
+    for (const variant of ['Faster', '[Faster|faster]', 'faster']) {
+      const { item, presets, active } = prep(jewel(variant))
+      const stats = presets.find((p) => p.id === active)!.stats.filter(isStatFilter)
+      const ailments = stats.find((s) => s.tradeId.some((id) => id.endsWith('stat_538241406')))
+      expect(ailments, `variant ${variant}`).toBeDefined()
+      expect(ailments?.roll?.value).toBe(6)
+      expect(unknownMods(item)).toEqual([])
+    }
+  })
+
+  it('mod que não existe nos dados aparece como não pesquisável', () => {
+    const { item } = prep(
+      t('Item Class: Rings', 'Rarity: Rare', 'Doom Loop', 'Two-Stone Ring', '--------', 'Item Level: 80', '--------', '{ Prefix Modifier "Weird" (Tier: 1) }', '+5(4-6) to Something That Does Not Exist')
+    )
+    expect(unknownMods(item).map((m) => m.text)).toEqual(['+5(4-6) to Something That Does Not Exist'])
   })
 
   it('currency vai para a troca em massa (bulk)', () => {

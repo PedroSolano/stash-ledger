@@ -209,6 +209,20 @@ body {
 .stat-tag.t-fractured {
   color: var(--poe-fractured);
 }
+.unknown-mark {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 13px;
+  text-align: center;
+  color: var(--poe-text-dim);
+  border: 1px solid #3b2f20;
+}
+.stats.unknown .stat-main {
+  cursor: help;
+}
 .stat-roll {
   display: flex;
   align-items: center;

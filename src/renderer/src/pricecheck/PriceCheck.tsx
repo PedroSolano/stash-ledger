@@ -12,6 +12,7 @@ import {
   searchKind,
   searchTrade,
   uniqueCandidates,
+  unknownMods,
   type BaseType,
   type BulkResult,
   type FilterOrGroup,
@@ -535,6 +536,21 @@ export function PriceCheck(props: { dataReady: Promise<void>; register: (fn: (p:
                   </div>
                 )
               )}
+            </div>
+          )}
+          {unknownMods(prepared.item).length > 0 && (
+            <div className="stats unknown">
+              {unknownMods(prepared.item).map((m, i) => (
+                <div key={`u-${i}`} className="stat off" title="Not recognized: this mod can't be used as a trade filter">
+                  <span className="stat-main">
+                    <span className="unknown-mark">?</span>
+                    <span className="stat-text">
+                      {m.text.replace(/([+-]?\d+(?:\.\d+)?)\(([^)-]*)(?:-([^)]+))?\)/g, '$1')}
+                      <span className="stat-tag">not searchable</span>
+                    </span>
+                  </span>
+                </div>
+              ))}
             </div>
           )}
 

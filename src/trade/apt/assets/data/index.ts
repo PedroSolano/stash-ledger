@@ -95,14 +95,20 @@ export function loadItems(ndjson: string): void {
 export function loadStats(ndjson: string): void {
   const byRef = new Map<string, number>()
   const byMatcher = new Map<string, number>()
+  // Stash Ledger: palavras-chave do jogo vêm com maiúscula no texto copiado ("deal damage 6% Faster")
+  // e minúscula nos dados ("faster"); se a busca exata falhar, tenta sem diferenciar maiúsculas.
+  const byMatcherLower = new Map<string, number>()
   scanLines(ndjson, (r, start) => {
     const sg = r as StatOrGroup
     const stats = 'stats' in sg ? sg.stats : [sg]
     for (const s of stats) {
       if (!byRef.has(s.ref)) byRef.set(s.ref, start)
       for (const m of s.matchers) {
-        if (!byMatcher.has(m.string)) byMatcher.set(m.string, start)
-        if (m.advanced && !byMatcher.has(m.advanced)) byMatcher.set(m.advanced, start)
+        for (const str of m.advanced ? [m.string, m.advanced] : [m.string]) {
+          if (!byMatcher.has(str)) byMatcher.set(str, start)
+          const lower = str.toLowerCase()
+          if (!byMatcherLower.has(lower)) byMatcherLower.set(lower, start)
+        }
       }
     }
   })
@@ -114,7 +120,20 @@ export function loadStats(ndjson: string): void {
 
   STAT_BY_MATCH_STR_V2 = function (matchStr: string) {
     const start = byMatcher.get(matchStr)
-    return start === undefined ? undefined : lineAt<StatOrGroup>(ndjson, start)
+    if (start !== undefined) return lineAt<StatOrGroup>(ndjson, start)
+    const lowerStart = byMatcherLower.get(matchStr.toLowerCase())
+    if (lowerStart === undefined) return undefined
+    // Registro recém-lido (cópia própria): ajusta o texto do matcher para o código adiante, que
+    // compara com igualdade exata, reconhecer este texto.
+    const sg = lineAt<StatOrGroup>(ndjson, lowerStart)
+    const lower = matchStr.toLowerCase()
+    for (const s of 'stats' in sg ? sg.stats : [sg]) {
+      for (const m of s.matchers) {
+        if (m.string.toLowerCase() === lower) m.string = matchStr
+        if (m.advanced?.toLowerCase() === lower) m.advanced = matchStr
+      }
+    }
+    return sg
   }
 
   STAT_BY_MATCH_STR = function (matchStr: string) {
