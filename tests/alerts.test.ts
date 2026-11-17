@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { PricedItem, SnapshotDetail } from '../src/shared/types'
-import { buildAlert, detectDrops } from '../src/core/alerts'
+import { buildAlert, detectDrops, thresholdInChaos } from '../src/core/alerts'
+import { defaultSettings, sanitizeSettings } from '../src/core/settings'
 
 const DIV = 140
 
@@ -45,6 +46,27 @@ describe('detecção de drops caros', () => {
     expect(detectDrops(null, next, DIV)).toEqual([])
     expect(detectDrops(snap([], ['Dump'], 'Standard'), snap([item('X', 5 * DIV, 1)]), DIV)).toEqual([])
     expect(detectDrops(snap([], ['Dump']), next, DIV)).toEqual([])
+  })
+
+  it('valor mínimo em qualquer moeda vira chaos pela cotação atual', () => {
+    const rates = { divine: 150, exalted: 12 }
+    expect(thresholdInChaos(1, 'divine', rates)).toBe(150)
+    expect(thresholdInChaos(50, 'chaos', rates)).toBe(50)
+    expect(thresholdInChaos(5, 'exalted', rates)).toBe(60)
+    // Sem cotação da moeda: não dispara (em vez de usar um valor errado).
+    expect(thresholdInChaos(5, 'exalted', { divine: 150 })).toBeNull()
+    expect(thresholdInChaos(0, 'chaos', rates)).toBeNull()
+  })
+
+  it('configuração antiga (alertThresholdDiv) vira valor em divine', () => {
+    const d = defaultSettings()
+    expect([d.alertThreshold, d.alertCurrency]).toEqual([1, 'divine'])
+    const old = sanitizeSettings({ alertThresholdDiv: 2.5 } as never, d)
+    expect([old.alertThreshold, old.alertCurrency]).toEqual([2.5, 'divine'])
+    const chaos = sanitizeSettings({ alertThreshold: 80, alertCurrency: 'chaos' }, d)
+    expect([chaos.alertThreshold, chaos.alertCurrency]).toEqual([80, 'chaos'])
+    expect(sanitizeSettings({ alertCurrency: 'mirror' as never }, d).alertCurrency).toBe('divine')
+    expect(sanitizeSettings({ alertThreshold: -3 }, d).alertThreshold).toBe(1)
   })
 
   it('ignora preço de baixa confiança e ordena pelo valor', () => {

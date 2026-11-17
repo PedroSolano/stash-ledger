@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ChatCommand } from '../../../shared/hotkeys'
-import type { AppState, Settings, UpdateState } from '../../../shared/types'
+import type { AlertCurrency, AppState, Settings, UpdateState } from '../../../shared/types'
 import { LAYOUT_LABEL, type Layout, type LayoutPref } from '../lib/useLayout'
 import { HotkeyInput } from './HotkeyInput'
 
@@ -93,7 +93,8 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
         hideBelowChaos: s.hideBelowChaos,
         priceRefreshMinutes: s.priceRefreshMinutes,
         alertsEnabled: s.alertsEnabled,
-        alertThresholdDiv: s.alertThresholdDiv,
+        alertThreshold: s.alertThreshold,
+        alertCurrency: s.alertCurrency,
         alertSound: s.alertSound,
         hotkeysEnabled: s.hotkeysEnabled,
         overlayKey: s.overlayKey,
@@ -316,21 +317,34 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
             </span>
           </label>
           <div className="field">
-            <label htmlFor="alert-min">Minimum value (divine)</label>
-            <input
-              id="alert-min"
-              className="input"
-              type="number"
-              min={0.05}
-              step={0.1}
-              value={s.alertThresholdDiv}
-              disabled={!s.alertsEnabled}
-              onChange={(e) => set('alertThresholdDiv', Number(e.target.value))}
-            />
+            <label htmlFor="alert-min">Minimum value</label>
+            <div className="amount">
+              <input
+                id="alert-min"
+                className="input"
+                type="number"
+                min={0.01}
+                step={s.alertCurrency === 'chaos' ? 1 : 0.1}
+                value={s.alertThreshold}
+                disabled={!s.alertsEnabled}
+                onChange={(e) => set('alertThreshold', Number(e.target.value))}
+              />
+              <select
+                className="select"
+                aria-label="Currency"
+                value={s.alertCurrency}
+                disabled={!s.alertsEnabled}
+                onChange={(e) => set('alertCurrency', e.target.value as AlertCurrency)}
+              >
+                <option value="chaos">Chaos Orb</option>
+                <option value="exalted">Exalted Orb</option>
+                <option value="divine">Divine Orb</option>
+              </select>
+            </div>
             <span className="hint">
-              Per item, using the current divine price. Stacks count only what was added (2 new divines = 2 div). Items are
-              detected on each snapshot, so pair this with an automatic snapshot (every 5 minutes is a good fit). Shows over
-              windowed or borderless fullscreen, not exclusive fullscreen.
+              Per item, converted with the current poe.ninja price. Stacks count only what was added (2 new divines = 2 div).
+              Items are detected on each snapshot, so pair this with an automatic snapshot (every 5 minutes is a good fit).
+              Shows over windowed or borderless fullscreen, not exclusive fullscreen.
             </span>
           </div>
           <label className="check">

@@ -92,7 +92,7 @@ Exile's Companion is meant to stay open while you play. It has no taskbar button
 
 When a snapshot finds a new item worth **1 divine or more**, a siren shows up in the top-left corner of your screen for a few seconds, with the siren sound, the item's name and its value. It sits on top of the game and doesn't take focus or block clicks.
 
-- Change the minimum value, turn the sound off or disable alerts in **Settings → Drop alerts**. **Test alert** shows what it looks like.
+- Change the minimum value and its currency (**Chaos**, **Exalted** or **Divine Orb**, converted with the current poe.ninja price), turn the sound off or disable alerts in **Settings → Drop alerts**. **Test alert** shows what it looks like.
 - Alerts come from snapshots, so turn on **automatic snapshots** (every 5 minutes works well) to get them while you play.
 - For stacks, only what was added counts: going from 12 to 14 divines alerts for 2 divines.
 - No alert on your first snapshot of a league or for tabs you just started tracking.

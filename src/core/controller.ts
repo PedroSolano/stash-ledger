@@ -13,7 +13,7 @@ import type {
   SnapshotSummary,
   StashTabInfo
 } from '../shared/types'
-import { buildAlert, detectDrops } from './alerts'
+import { buildAlert, detectDrops, thresholdInChaos } from './alerts'
 import { checkPrice } from './pricecheck'
 import { DEMO_TABS, demoItems } from './demo/fixtures'
 import type { CompactPrices } from './pricing/ninja'
@@ -442,9 +442,13 @@ export class Controller {
     }
 
     // Sirene: compara com o snapshot anterior antes de sobrescrevê-lo.
-    if (s.alertsEnabled && index.divineChaos > 0) {
+    const minChaos = thresholdInChaos(s.alertThreshold, s.alertCurrency, {
+      divine: index.divineChaos,
+      exalted: index.exchange.get('exalted orb')?.chaos
+    })
+    if (s.alertsEnabled && index.divineChaos > 0 && minChaos !== null) {
       const prev = await this.getLatest(league).catch(() => null)
-      const drops = detectDrops(prev, detail, s.alertThresholdDiv * index.divineChaos)
+      const drops = detectDrops(prev, detail, minChaos)
       if (drops.length) {
         this.p.showAlert(buildAlert(drops, index.divineChaos, s.alertSound)).catch((e: Error) => void this.p.logError('alert', e.message))
       }

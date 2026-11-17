@@ -427,6 +427,20 @@ kbd {
   border-radius: 3px;
 }
 
+/* Valor + moeda lado a lado (ex.: mínimo da sirene). */
+.amount {
+  display: flex;
+  gap: 8px;
+}
+.amount .input {
+  flex: 1;
+  min-width: 0;
+}
+.amount .select {
+  flex: none;
+  width: 170px;
+}
+
 /* Campo que grava um atalho: clique e aperte a combinação. */
 .hotkey-input {
   min-width: 150px;

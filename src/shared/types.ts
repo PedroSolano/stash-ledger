@@ -149,8 +149,10 @@ export interface Settings {
   priceRefreshMinutes: number
   /** Sirene no canto da tela quando um item caro entra na stash. */
   alertsEnabled: boolean
-  /** Preço unitário mínimo (em divines) para disparar a sirene. */
-  alertThresholdDiv: number
+  /** Preço unitário mínimo para disparar a sirene, na moeda de `alertCurrency`. */
+  alertThreshold: number
+  /** Moeda do valor mínimo da sirene (convertido pelo preço atual do poe.ninja). */
+  alertCurrency: AlertCurrency
   /** Tocar o som da sirene junto com o overlay. */
   alertSound: boolean
   /** Atalhos dentro do jogo (abrir o app por cima do jogo, comandos de chat). */
@@ -199,6 +201,8 @@ export interface WindowVisibility {
   visible: boolean
   overlay: boolean
 }
+
+export type AlertCurrency = 'chaos' | 'exalted' | 'divine'
 
 /** Configuração de atalhos enviada ao backend. */
 export interface HotkeyConfig {

@@ -1,4 +1,4 @@
-import type { DropAlert, DropAlertItem, SnapshotDetail } from '../shared/types'
+import type { AlertCurrency, DropAlert, DropAlertItem, SnapshotDetail } from '../shared/types'
 
 const MAX_ITEMS = 5
 
@@ -31,6 +31,12 @@ export function detectDrops(prev: SnapshotDetail | null, next: SnapshotDetail, t
     })
   }
   return out.sort((a, b) => b.totalChaos - a.totalChaos).slice(0, MAX_ITEMS)
+}
+
+/** Valor mínimo em chaos, pela cotação atual. null se a cotação da moeda não estiver disponível. */
+export function thresholdInChaos(value: number, currency: AlertCurrency, rates: { divine: number; exalted?: number }): number | null {
+  const rate = currency === 'chaos' ? 1 : currency === 'divine' ? rates.divine : rates.exalted
+  return rate && rate > 0 && value > 0 ? value * rate : null
 }
 
 export function buildAlert(items: DropAlertItem[], divineChaos: number, sound: boolean): DropAlert {

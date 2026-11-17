@@ -1,7 +1,8 @@
 import { DEFAULT_CHAT_COMMANDS, normalizeCombo, sanitizeChatCommands } from '../shared/hotkeys'
-import type { Settings } from '../shared/types'
+import type { AlertCurrency, Settings } from '../shared/types'
 
 export const PRICE_REFRESH_OPTIONS = [15, 30, 60, 120] as const
+export const ALERT_CURRENCIES: readonly AlertCurrency[] = ['chaos', 'exalted', 'divine']
 
 export function defaultSettings(env: Record<string, string | undefined> = {}): Settings {
   return {
@@ -17,7 +18,8 @@ export function defaultSettings(env: Record<string, string | undefined> = {}): S
     hideBelowChaos: 1,
     priceRefreshMinutes: 30,
     alertsEnabled: true,
-    alertThresholdDiv: 1,
+    alertThreshold: 1,
+    alertCurrency: 'divine',
     alertSound: true,
     hotkeysEnabled: true,
     overlayKey: 'Shift+Space',
@@ -68,9 +70,17 @@ export function sanitizeSettings(patch: Partial<Settings>, current: Settings): S
   }
   if (patch.alertsEnabled !== undefined) next.alertsEnabled = !!patch.alertsEnabled
   if (patch.alertSound !== undefined) next.alertSound = !!patch.alertSound
-  if (patch.alertThresholdDiv !== undefined) {
-    const n = Number(patch.alertThresholdDiv)
-    next.alertThresholdDiv = Number.isFinite(n) ? Math.min(100000, Math.max(0.05, Math.round(n * 100) / 100)) : 1
+  // Até a 0.7.2 o valor era sempre em divines (alertThresholdDiv).
+  const legacyDiv = (patch as { alertThresholdDiv?: unknown }).alertThresholdDiv
+  if (patch.alertThreshold === undefined && legacyDiv !== undefined) {
+    patch = { ...patch, alertThreshold: Number(legacyDiv), alertCurrency: patch.alertCurrency ?? 'divine' }
+  }
+  if (patch.alertCurrency !== undefined) {
+    next.alertCurrency = ALERT_CURRENCIES.includes(patch.alertCurrency) ? patch.alertCurrency : current.alertCurrency
+  }
+  if (patch.alertThreshold !== undefined) {
+    const n = Number(patch.alertThreshold)
+    next.alertThreshold = Number.isFinite(n) && n > 0 ? Math.min(1_000_000, Math.max(0.01, Math.round(n * 100) / 100)) : current.alertThreshold
   }
   if (patch.hotkeysEnabled !== undefined) next.hotkeysEnabled = !!patch.hotkeysEnabled
   // Atalho vazio desliga a função; inválido mantém o atual.
