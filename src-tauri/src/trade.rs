@@ -36,8 +36,10 @@ pub fn valid_ids(ids: &[String]) -> bool {
     !ids.is_empty() && ids.len() <= 10 && ids.iter().all(|i| i.len() == 64 && i.chars().all(|c| c.is_ascii_hexdigit()))
 }
 
+/// Id da consulta: hoje é base64url comprimido (ex.: "H4sIAAAAAAAAA6tW…"), antes era curto.
+/// Só caracteres seguros para URL (nada de '/', '?', '&').
 pub fn valid_query_id(q: &str) -> bool {
-    !q.is_empty() && q.len() <= 32 && q.chars().all(|c| c.is_ascii_alphanumeric())
+    !q.is_empty() && q.len() <= 1024 && q.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
 }
 
 async fn send(
@@ -112,7 +114,11 @@ mod tests {
         assert!(!valid_ids(&["xyz".into()]));
         assert!(!valid_ids(&[format!("{}/", "a".repeat(63))]));
         assert!(valid_query_id("Ab3dE9"));
+        // Formato atual (real, de uma busca em Standard).
+        assert!(valid_query_id("H4sIAAAAAAAAA6tWKi5JLCktVrKqVsovKMnMz1OyUsrPy8nMS1Wq1VEqqSxIBQq4ZJYBBRT8i5KUagEn-4_fMgAAAA"));
         assert!(!valid_query_id("a/b"));
+        assert!(!valid_query_id("a?b"));
+        assert!(!valid_query_id(""));
         assert!(valid_league("Keepers").is_ok());
         assert!(valid_league("Hardcore Keepers").is_ok());
         assert!(valid_league("a/b").is_err());
