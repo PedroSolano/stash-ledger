@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Exile's Companion",
+  "productName": "Exiles Companion",
   "mainBinaryName": "exiles-companion",
   "version": "../package.json",
   "identifier": "app.stashledger.desktop",

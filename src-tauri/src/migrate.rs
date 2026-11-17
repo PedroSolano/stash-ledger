@@ -8,6 +8,9 @@
 //!   executável antigo, `stash-ledger.exe`, pelo caminho dele).
 //! - O identificador interno (app.stashledger.desktop) e o serviço do cofre de senhas não mudam:
 //!   a sessão salva e os dados do WebView continuam valendo.
+//! - O nome técnico do produto (pasta de instalação, instalador) é "Exiles Companion", sem
+//!   apóstrofo: o gerador do instalador (NSIS) quebra com aspas simples no nome. O app mostra
+//!   "Exile's Companion" em todo lugar.
 
 use std::path::{Path, PathBuf};
 

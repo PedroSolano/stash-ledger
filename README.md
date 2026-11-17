@@ -126,4 +126,4 @@ There are no analytics and no tracking.
 
 ## Uninstall
 
-Click **Log out** in the app first to remove your saved session, quit it from the tray icon, then go to **Windows Settings → Apps → Installed apps → Exile's Companion → Uninstall**. To also remove your history, delete the `%APPDATA%\Exile's Companion` folder.
+Click **Log out** in the app first to remove your saved session, quit it from the tray icon, then go to **Windows Settings → Apps → Installed apps → Exiles Companion → Uninstall** (Windows lists it without the apostrophe). To also remove your history, delete the `%APPDATA%\Exile's Companion` folder.
