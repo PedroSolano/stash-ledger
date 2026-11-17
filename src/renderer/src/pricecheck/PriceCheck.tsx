@@ -45,6 +45,13 @@ const CURRENCY_LABEL: Record<string, string> = {
 }
 const currency = (c: string): string => CURRENCY_LABEL[c] ?? c
 
+/** Erros do parser do Awakened em texto legível. */
+function tradeErrorText(code: string): string {
+  if (code === 'item.unknown') return "No trade search for this item: it isn't in the trade data yet (new items show up after a data update)."
+  if (code === 'item.parse_error') return "Couldn't read this item for a trade search."
+  return code
+}
+
 /** Texto do filtro com os valores do item no lugar de '#'. */
 function statText(s: StatFilter): string {
   const v = s.roll?.value
@@ -505,7 +512,7 @@ export function PriceCheck(props: { dataReady: Promise<void>; register: (fn: (p:
       )}
 
       {!dataLoaded && <div className="muted pad">Loading mod data…</div>}
-      {check.error && <div className="muted pad">{check.error}</div>}
+      {check.error && <div className="muted pad">{tradeErrorText(check.error)}</div>}
 
       {prepared && check.filters && (
         <>

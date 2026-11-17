@@ -47,7 +47,13 @@ const idx = PriceIndex.build({
         line({ name: '12% increased Chaos Damage', baseType: 'Large Cluster Jewel', variant: '8 passives', levelRequired: 84, itemClass: 2, chaosValue: 266 })
       ]
     },
-    BaseType: { lines: [line({ name: 'Stygian Vise', levelRequired: 85, chaosValue: 333 })] }
+    BaseType: { lines: [line({ name: 'Stygian Vise', levelRequired: 85, chaosValue: 333 })] },
+    Viscera: {
+      lines: [
+        line({ name: 'Greater Elemental Essence', variant: '+#% to maximum Cold Resistance', chaosValue: 12 }),
+        line({ name: 'Greater Elemental Essence', variant: '+#% to maximum Fire Resistance', chaosValue: 30 })
+      ]
+    }
   }
 })
 
@@ -127,6 +133,14 @@ describe('price check pelo texto copiado do jogo', () => {
     expect(ring.ok).toBe(true)
     expect(ring.unitChaos).toBeUndefined()
     expect(ring.message).toMatch(/trade search/)
+  })
+
+  it('vísceras (raridade nova): preço pelo nome e pelo mod', () => {
+    const body = ['Greater Elemental Essence', '--------', 'Torso', '--------', '+3(2-3)% to maximum Cold Resistance', '--------', 'Take this to the Wickerman in a town or hideout to attach it.']
+    for (const head of [['Item Class: Viscera', 'Rarity: Viscera'], ['Item Class: Viscera'], ['Item Class: Viscera', 'Rarity: Normal']]) {
+      const r = check(t(...head, ...body))
+      expect(r, head.join(' / ')).toMatchObject({ ok: true, name: 'Greater Elemental Essence', unitChaos: 12 })
+    }
   })
 
   it('texto que não é item', () => {

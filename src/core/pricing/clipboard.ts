@@ -116,10 +116,12 @@ export function parseItemText(text: string): ParsedItem | null {
   let i = 0
   let itemClass: string | undefined
   if (head[i]?.startsWith('Item Class:')) itemClass = head[i++].slice('Item Class:'.length).trim()
-  if (!head[i]?.startsWith('Rarity:')) return null
-  const rarity = head[i++].slice('Rarity:'.length).trim()
-  const frameType = RARITY_FRAME[rarity.toLowerCase()]
-  if (frameType === undefined) return null
+  // Tipos novos (vísceras, por exemplo) trazem raridades que não estão na lista, ou nenhuma:
+  // valem como itens normais (o preço sai pelo nome e pelos mods).
+  let rarity = 'Normal'
+  if (head[i]?.startsWith('Rarity:')) rarity = head[i++].slice('Rarity:'.length).trim()
+  else if (!itemClass) return null
+  const frameType = RARITY_FRAME[rarity.toLowerCase()] ?? 0
   const names = head.slice(i)
   if (!names.length) return null
 
