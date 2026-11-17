@@ -1,7 +1,7 @@
 {
   "name": "stash-ledger",
   "productName": "Exiles Companion",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "Exile's Companion: Path of Exile stash value, price check, trade search and in-game hotkeys. Runs locally, no backend.",
   "private": true,
   "type": "module",
