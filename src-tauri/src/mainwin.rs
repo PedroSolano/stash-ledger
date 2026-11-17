@@ -111,6 +111,10 @@ pub fn game_in_front() -> bool {
     platform::game_in_front()
 }
 
+pub fn focus_game(hwnd: isize) {
+    platform::focus(hwnd);
+}
+
 #[cfg(windows)]
 mod platform {
     use windows_sys::Win32::Foundation::{HWND, RECT};

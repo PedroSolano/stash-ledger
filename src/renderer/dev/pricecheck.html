@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Só desenvolvimento (fora do build): a janela do price check no navegador, com a ponte do
+         Tauri simulada. Abra http://127.0.0.1:5173/dev/pricecheck.html?item=ring|unid|divine -->
+    <title>Price check (dev)</title>
+    <style>
+      body { background: #2b3a2e !important; padding: 20px; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./pricecheck-mock.ts"></script>
+    <script type="module" src="../src/pricecheck/main.tsx"></script>
+  </body>
+</html>

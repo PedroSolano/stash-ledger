@@ -58,7 +58,7 @@ void listen<{ text: string }>('price-check', (e) => {
         message: err?.message ?? String(err)
       })
     )
-    .then((result) => showPriceCheck(result))
+    .then((ninja) => showPriceCheck({ text: e.payload.text, ninja, league: controller.league() }))
     .catch(() => undefined)
 })
 // "Quit" na bandeja: fecha de vez, instalando antes a atualização que estiver pronta.

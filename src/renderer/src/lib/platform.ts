@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import type { Platform } from '../../../core/controller'
-import type { PriceCheckResult } from '../../../shared/types'
+import type { PriceCheckPayload } from '../../../shared/types'
 
 // Implementação da Platform sobre os comandos do backend Rust (src-tauri/src/lib.rs).
 // Erros do Rust chegam como string; viram Error para a interface mostrar a mensagem.
@@ -38,7 +38,7 @@ export const tauriPlatform: Platform = {
 export const pauseHotkeys = (paused: boolean): Promise<void> => call('hotkeys_pause', { paused })
 export const hideWindow = (): Promise<void> => call('main_hide')
 export const quitApp = (): Promise<void> => call('app_quit')
-export const showPriceCheck = (result: PriceCheckResult): Promise<void> => call('pricecheck_show', { result })
+export const showPriceCheck = (result: PriceCheckPayload): Promise<void> => call('pricecheck_show', { result })
 
 export const openExternal = (url: string): Promise<void> => call('open_external', { url })
 export const openLog = (): Promise<void> => call('open_log')

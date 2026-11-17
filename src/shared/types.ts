@@ -187,6 +187,14 @@ export interface PriceCheckResult {
   pricesUpdatedAt?: number | null
 }
 
+/** O que a janela do price check recebe: o texto do item (para os filtros da trade), o preço do
+ *  poe.ninja já calculado e a liga. */
+export interface PriceCheckPayload {
+  text: string
+  ninja: PriceCheckResult
+  league: string | null
+}
+
 export interface WindowVisibility {
   visible: boolean
   overlay: boolean

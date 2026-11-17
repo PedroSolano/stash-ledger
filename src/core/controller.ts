@@ -294,6 +294,10 @@ export class Controller {
   private checkCache: { league: string; updatedAt: number | null; index: PriceIndex } | null = null
   private checkTimer: ReturnType<typeof setTimeout> | null = null
 
+  league(): string | null {
+    return this.settings.league
+  }
+
   async priceCheck(text: string): Promise<PriceCheckResult> {
     const league = this.settings.league
     if (!league) {

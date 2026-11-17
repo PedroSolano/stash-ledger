@@ -68,7 +68,15 @@ Markers in the item table:
 Stash Ledger is meant to stay open while you play. It has no taskbar button. Closing the window only hides it: the app keeps running in the **system tray** (next to the clock), so alerts, automatic snapshots and hotkeys keep working. Click the tray icon to open it again; right-click it and choose **Quit** to close it for real.
 
 - **Shift + Space** in game opens Stash Ledger on top of the game. Press it again, press **Esc** or click the game to hide it; the game gets the focus back.
-- **Alt + D** over an item (in your inventory, stash or on the ground) shows its poe.ninja price next to the cursor; move the mouse away and it disappears. It covers what poe.ninja prices: uniques (with links and variants), currency and stacks, gems by level/quality/corruption, maps, divination cards, cluster jewels, ilvl 82+ bases and more. Rares and most magic items need a trade search, which is planned for a later update. The first check after opening the app takes a moment; after that it's instant and works offline from the local price cache.
+- **Alt + D** over an item (inventory, stash or ground) opens the **price check** next to the cursor, like Awakened PoE Trade:
+  - the **poe.ninja price** right away (uniques with links and variants, currency, gems, maps, cards, cluster jewels, bases…);
+  - a **trade search** with the item's mods as filters: each one with its roll, how good the roll is within its tier, and editable minimum/maximum (by default 10% below your roll). Rares use the pseudo totals (total life, total resistances), like Awakened;
+  - item filters you can toggle: item level, links, quality, gem level, map tier, influences, corruption, rarity, exact base or any base of the category;
+  - the cheapest listings (instant buyout by default) with their age and whether the seller is online, **Show more**, and **Open on the trade site**;
+  - for currency, fragments and other stackables, the **bulk exchange** rates;
+  - for an **unidentified unique**, the uniques that base can be, with their prices: click one to search it.
+
+  Click the window to use the filters. It closes when you click outside it, press **Esc**, or switch to another program. Searches are anonymous and respect the trade site's rate limits.
 - **Chat commands**: by default **F5** goes to your hideout (`/hideout`), **F6** to Kingsmarch (`/kingsmarch`) and **F9** back to character select (`/exit`). Add, remove or change them in **Settings → In-game overlay & hotkeys**: click a key field and press the combination you want.
 - Hotkeys only work while Path of Exile is the focused window; everywhere else your keys behave normally. Each hotkey does one thing per key press (opens the chat, types the command, sends it), in line with GGG's rules for third-party tools. It briefly uses the clipboard and then puts your text back.
 - Like the alerts, the overlay needs **windowed** or **windowed fullscreen** mode.
@@ -93,7 +101,8 @@ Prices come from a small compressed cache on your computer. While the app is ope
 - **"Waiting for GGG rate limit"**: normal when you track many tabs. GGG limits how fast stash tabs can be read, and the app waits instead of getting you rate limited.
 - **Where did the app go?** Closing the window hides it in the tray (the icon may be under the **^** arrow next to the clock). Click it to bring the window back.
 - **Hotkeys do nothing in game**: check that they're turned on in Settings, that the game is in windowed or windowed fullscreen mode, and that no other tool uses the same keys. If you run the game as administrator, Windows doesn't let normal apps see its keys; run both the same way.
-- **Price check shows nothing**: make sure the mouse is over the item when you press the key, and that you picked your league in the app. "No poe.ninja price" on a rare is expected for now.
+- **Price check shows nothing**: make sure the mouse is over the item when you press the key, and that you picked your league in the app.
+- **"Trade rate limit"** in the price check: the trade site allows only a few searches per minute. Wait the seconds it shows and search again.
 - **A chat command typed nothing**: the commands assume the chat opens with Enter (the game's default).
 - **"N failed" on the Priced items card**: some items couldn't be read. Go to **Settings → Open error log** and attach the file to a [new issue](https://github.com/PedroSolano/stash-ledger/issues). The log never contains your POESESSID.
 
@@ -101,7 +110,7 @@ Prices come from a small compressed cache on your computer. While the app is ope
 
 Your snapshots, settings and price cache stay on your computer (`%APPDATA%\Stash Ledger`); your session is kept in the Windows Credential Manager. The app only talks to:
 
-- **pathofexile.com**, to read your stash tabs;
+- **pathofexile.com**, to read your stash tabs and, for the price check, to search the trade site (anonymously, without your session);
 - **poe.ninja**, to fetch prices;
 - **web.poecdn.com**, for item icons;
 - **github.com**, to check for updates.

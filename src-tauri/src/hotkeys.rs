@@ -229,24 +229,39 @@ pub fn set_paused(paused: bool) {
     }
 }
 
-pub use platform::{cursor_pos, init, set_main_window};
+pub use platform::{foreground, init, set_main_window, watch_popup};
+
+/// Algo que fecha a janela do price check: clique fora dela ou Esc no jogo.
+pub enum Dismiss {
+    ClickOutside,
+    Escape,
+}
 
 #[cfg(not(windows))]
 mod platform {
-    use super::PriceRequest;
-    pub fn init(_on_toggle: impl Fn(isize) + Send + 'static, _on_price: impl Fn(PriceRequest) + Send + 'static) {}
+    use super::{Dismiss, PriceRequest};
+    pub fn init(
+        _on_toggle: impl Fn(isize) + Send + 'static,
+        _on_price: impl Fn(PriceRequest) + Send + 'static,
+        _on_dismiss: impl Fn(Dismiss) + Send + 'static,
+    ) {
+    }
     pub fn set_main_window(_hwnd: isize) {}
     pub fn ensure_hook() {}
     pub fn cursor_pos() -> (i32, i32) {
         (0, 0)
     }
+    pub fn foreground() -> isize {
+        0
+    }
+    pub fn watch_popup(_rect: Option<(i32, i32, i32, i32)>) {}
 }
 
 #[cfg(windows)]
 mod platform {
-    use super::{Combo, Hit, PriceRequest, BINDINGS};
+    use super::{Combo, Dismiss, Hit, PriceRequest, BINDINGS};
     use std::ptr::{null, null_mut};
-    use std::sync::atomic::{AtomicIsize, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicIsize, Ordering};
     use std::sync::mpsc::{channel, Sender};
     use std::sync::{Mutex, Once, OnceLock};
     use std::time::{Duration, Instant};
@@ -264,7 +279,8 @@ mod platform {
     };
     use windows_sys::Win32::UI::WindowsAndMessaging::{
         CallNextHookEx, GetClassNameW, GetCursorPos, GetForegroundWindow, GetMessageW, SetWindowsHookExW, HC_ACTION,
-        KBDLLHOOKSTRUCT, LLKHF_EXTENDED, MSG, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
+        KBDLLHOOKSTRUCT, LLKHF_EXTENDED, MSG, MSLLHOOKSTRUCT, WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP,
+        WM_LBUTTONDOWN, WM_MBUTTONDOWN, WM_RBUTTONDOWN, WM_SYSKEYDOWN, WM_SYSKEYUP, WM_XBUTTONDOWN,
     };
 
     /// Marca as teclas que o próprio app envia, para o hook deixá-las passar.
@@ -276,16 +292,25 @@ mod platform {
         Toggle(isize),
         PriceCheck(isize),
         Chat(String),
+        Dismiss(Dismiss),
     }
 
     static TX: OnceLock<Mutex<Sender<Action>>> = OnceLock::new();
+    /// Janela do price check aberta: cliques fora deste retângulo (tela, px físicos) a fecham.
+    static POPUP: AtomicBool = AtomicBool::new(false);
+    static POPUP_RECT: Mutex<(i32, i32, i32, i32)> = Mutex::new((0, 0, 0, 0));
+    const SCAN_ESCAPE: u16 = 0x01;
     static MAIN_HWND: AtomicIsize = AtomicIsize::new(0);
     static HOOK: Once = Once::new();
     /// Teclas cujo "apertar" o hook engoliu: o "soltar" (e as repetições) também é engolido.
     static HELD: Mutex<Vec<(u16, bool)>> = Mutex::new(Vec::new());
 
     /// Liga a thread que executa as ações (fora do hook, que precisa responder em milissegundos).
-    pub fn init(on_toggle: impl Fn(isize) + Send + 'static, on_price: impl Fn(PriceRequest) + Send + 'static) {
+    pub fn init(
+        on_toggle: impl Fn(isize) + Send + 'static,
+        on_price: impl Fn(PriceRequest) + Send + 'static,
+        on_dismiss: impl Fn(Dismiss) + Send + 'static,
+    ) {
         let (tx, rx) = channel::<Action>();
         if TX.set(Mutex::new(tx)).is_err() {
             return;
@@ -301,15 +326,57 @@ mod platform {
                         }
                     }
                     Action::Chat(text) => unsafe { send_chat(&text) },
+                    Action::Dismiss(d) => on_dismiss(d),
                 }
             }
         });
+    }
+
+    fn dispatch(a: Action) {
+        if let Some(tx) = TX.get().and_then(|m| m.lock().ok()) {
+            let _ = tx.send(a);
+        }
     }
 
     pub fn cursor_pos() -> (i32, i32) {
         let mut p = POINT { x: 0, y: 0 };
         unsafe { GetCursorPos(&mut p) };
         (p.x, p.y)
+    }
+
+    pub fn foreground() -> isize {
+        unsafe { GetForegroundWindow() as isize }
+    }
+
+    /// Liga (com o retângulo da janela) ou desliga a vigia de cliques fora / Esc do price check.
+    pub fn watch_popup(rect: Option<(i32, i32, i32, i32)>) {
+        if let Some(r) = rect {
+            if let Ok(mut g) = POPUP_RECT.lock() {
+                *g = r;
+            }
+            ensure_hook();
+        }
+        POPUP.store(rect.is_some(), Ordering::SeqCst);
+    }
+
+    /// Hook de mouse: só olha cliques, e só com o price check aberto; nunca segura o clique
+    /// (ele chega ao jogo normalmente).
+    unsafe extern "system" fn mouse_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+        if code == HC_ACTION as i32 && POPUP.load(Ordering::Relaxed) {
+            let msg = wparam as u32;
+            if msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN || msg == WM_XBUTTONDOWN {
+                let m = &*(lparam as *const MSLLHOOKSTRUCT);
+                let inside = POPUP_RECT
+                    .try_lock()
+                    .map(|r| m.pt.x >= r.0 && m.pt.x < r.2 && m.pt.y >= r.1 && m.pt.y < r.3)
+                    .unwrap_or(true);
+                if !inside {
+                    POPUP.store(false, Ordering::SeqCst);
+                    dispatch(Action::Dismiss(Dismiss::ClickOutside));
+                }
+            }
+        }
+        CallNextHookEx(null_mut(), code, wparam, lparam)
     }
 
     pub fn set_main_window(hwnd: isize) {
@@ -320,10 +387,14 @@ mod platform {
     pub fn ensure_hook() {
         HOOK.call_once(|| {
             std::thread::spawn(|| unsafe {
-                let hook = SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook_proc), GetModuleHandleW(null()), 0);
+                let module = GetModuleHandleW(null());
+                let hook = SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook_proc), module, 0);
                 if hook.is_null() {
                     return;
                 }
+                // Mesmo laço de mensagens: cliques fora da janela do price check (custo quase zero
+                // quando ela está fechada: o hook retorna na primeira linha).
+                SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_proc), module, 0);
                 // O hook de baixo nível é chamado nesta thread, que precisa de um laço de mensagens.
                 let mut msg: MSG = std::mem::zeroed();
                 while GetMessageW(&mut msg, null_mut(), 0, 0) > 0 {}
@@ -383,6 +454,13 @@ mod platform {
         if !in_game && !in_main {
             return false;
         }
+        // Esc no jogo com o price check aberto: fecha a janela (e não abre o menu do jogo).
+        if in_game && key == (SCAN_ESCAPE, false) && POPUP.load(Ordering::Relaxed) {
+            POPUP.store(false, Ordering::SeqCst);
+            dispatch(Action::Dismiss(Dismiss::Escape));
+            held.push(key);
+            return true;
+        }
         let combo = Combo { scan: key.0, ext: key.1, ctrl: down(VK_CONTROL), shift: down(VK_SHIFT), alt: down(VK_MENU) };
         let hit = match BINDINGS.read() {
             Ok(b) => b.lookup(combo, in_game, in_main),
@@ -394,9 +472,7 @@ mod platform {
             Hit::PriceCheck => Action::PriceCheck(fg as isize),
             Hit::Chat(t) => Action::Chat(t),
         };
-        if let Some(tx) = TX.get().and_then(|m| m.lock().ok()) {
-            let _ = tx.send(action);
-        }
+        dispatch(action);
         held.push(key);
         true
     }

@@ -11,6 +11,7 @@ mod pricewin;
 mod ratelimit;
 mod secrets;
 mod store;
+mod trade;
 
 use ggg::{GggError, LegacyCreds, TabInfo};
 use ratelimit::{now_ms, Limiter};
@@ -80,6 +81,8 @@ pub struct AppState {
     session: StdMutex<Option<LegacyCreds>>,
     tokens: Mutex<Option<Tokens>>,
     limiter: Mutex<Limiter>,
+    /// Limites da trade (separados dos da stash: uma busca não segura um snapshot e vice-versa).
+    trade_limiter: Mutex<Limiter>,
     ninja_lock: Mutex<()>,
     oauth_cancel: StdMutex<Option<oneshot::Sender<()>>>,
     /// Alerta aguardando a janela de overlay terminar de carregar.
@@ -487,6 +490,19 @@ pub(crate) fn show_no_activate(w: &tauri::WebviewWindow) {
     let _ = w.show();
 }
 
+/// HWND da janela (0 fora do Windows).
+pub(crate) fn hwnd_of(w: &tauri::WebviewWindow) -> isize {
+    #[cfg(windows)]
+    {
+        return w.hwnd().map(|h| h.0 as isize).unwrap_or(0);
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = w;
+        0
+    }
+}
+
 /// Esconde uma janela mostrada com `show_no_activate`. Precisa ser pela mesma via (Win32): como o
 /// Tauri não ficou sabendo que ela apareceu, o `hide()` dele acha que já está escondida e não faz nada.
 pub(crate) fn hide_raw(w: &tauri::WebviewWindow) {
@@ -558,6 +574,23 @@ fn overlay_done(app: AppHandle) {
     if let Some(w) = app.get_webview_window("overlay") {
         let _ = w.close();
     }
+}
+
+/* ---------- busca na trade (price check) ---------- */
+
+#[tauri::command]
+async fn trade_search(state: State<'_, AppState>, league: String, body: Value) -> Result<Value, String> {
+    trade::search(&state.ggg, &state.trade_limiter, &state.ninja_ua(), &league, &body).await
+}
+
+#[tauri::command]
+async fn trade_fetch(state: State<'_, AppState>, ids: Vec<String>, query: String) -> Result<Value, String> {
+    trade::fetch(&state.ggg, &state.trade_limiter, &state.ninja_ua(), &ids, &query).await
+}
+
+#[tauri::command]
+async fn trade_exchange(state: State<'_, AppState>, league: String, body: Value) -> Result<Value, String> {
+    trade::exchange(&state.ggg, &state.trade_limiter, &state.ninja_ua(), &league, &body).await
 }
 
 /* ---------- atalhos, janela e bandeja ---------- */
@@ -642,6 +675,7 @@ fn build_state(app: &AppHandle) -> Result<AppState, Box<dyn std::error::Error>> 
         session: StdMutex::new(session),
         tokens: Mutex::new(tokens),
         limiter: Mutex::new(Limiter::default()),
+        trade_limiter: Mutex::new(Limiter::default()),
         ninja_lock: Mutex::new(()),
         oauth_cancel: StdMutex::new(None),
         pending_alert: StdMutex::new(None),
@@ -670,7 +704,12 @@ pub fn run() {
             build_tray(app)?;
             let handle = app.handle().clone();
             let handle2 = app.handle().clone();
-            hotkeys::init(move |game| mainwin::toggle(&handle, game), move |req| pricewin::request(&handle2, req));
+            let handle3 = app.handle().clone();
+            hotkeys::init(
+                move |game| mainwin::toggle(&handle, game),
+                move |req| pricewin::request(&handle2, req),
+                move |why| pricewin::dismiss(&handle3, why),
+            );
             #[cfg(windows)]
             if let Some(w) = app.get_webview_window("main") {
                 if let Ok(h) = w.hwnd() {
@@ -731,7 +770,12 @@ pub fn run() {
             app_quit,
             pricewin::pricecheck_show,
             pricewin::pricecheck_ready,
-            pricewin::pricecheck_visible
+            pricewin::pricecheck_visible,
+            pricewin::pricecheck_hide,
+            pricewin::pricecheck_resize,
+            trade_search,
+            trade_fetch,
+            trade_exchange
         ])
         .run(tauri::generate_context!())
         .expect("error while running Stash Ledger");
