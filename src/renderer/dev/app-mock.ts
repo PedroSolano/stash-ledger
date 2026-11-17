@@ -79,6 +79,8 @@ const settings = {
         return null
       case 'plugin:event|listen':
         return 1
+      case 'main_visibility':
+        return { visible: true, overlay: false }
       default:
         return null
     }

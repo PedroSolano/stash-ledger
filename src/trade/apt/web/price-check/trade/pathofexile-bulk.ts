@@ -1,5 +1,5 @@
 // Adapted from Awakened PoE Trade (MIT, see ../../../../LICENSE): renderer/src/web/price-check/trade/pathofexile-bulk.ts.
-// The HTTP call goes through Stash Ledger's backend (tradeTransport), which does the rate limiting.
+// The HTTP call goes through Exile's Companion's backend (tradeTransport), which does the rate limiting.
 import { TradeResponse, Account, tradeTag, tradeTransport, relativeDate } from './common'
 import { ItemFilters } from '../filters/interfaces'
 import { ParsedItem } from '@/parser'

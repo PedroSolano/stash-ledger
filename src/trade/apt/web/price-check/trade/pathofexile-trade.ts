@@ -1,5 +1,5 @@
 // Adapted from Awakened PoE Trade (MIT, see ../../../../LICENSE): renderer/src/web/price-check/trade/pathofexile-trade.ts.
-// Request building and result mapping are upstream's; the HTTP calls go through Stash Ledger's
+// Request building and result mapping are upstream's; the HTTP calls go through Exile's Companion's
 // backend (tradeTransport), which also does the rate limiting.
 import { ItemInfluence, ItemCategory } from '@/parser'
 import { ItemFilters, StatFilter, FilterOrGroup, INTERNAL_TRADE_IDS, InternalTradeId, FilterTag } from '../filters/interfaces'

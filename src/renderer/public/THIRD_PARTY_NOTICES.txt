@@ -4,7 +4,7 @@
 
 The price check's item parser, trade filters, trade query building and the mod/base data files
 (`src/trade/apt/`, `src/renderer/public/trade-data/`) come from
-[Awakened PoE Trade](https://github.com/SnosMe/awakened-poe-trade), adapted to Stash Ledger
+[Awakened PoE Trade](https://github.com/SnosMe/awakened-poe-trade), adapted to Exile's Companion
 (network through the app's backend, data loaded without build-time indexes). The upstream commit is
 recorded in `src/trade/apt/UPSTREAM`.
 

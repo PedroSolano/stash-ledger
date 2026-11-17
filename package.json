@@ -1,8 +1,8 @@
 {
   "name": "stash-ledger",
-  "productName": "Stash Ledger",
+  "productName": "Exile's Companion",
   "version": "0.6.2",
-  "description": "Path of Exile stash valuation with poe.ninja prices. Runs locally, no backend.",
+  "description": "Exile's Companion: Path of Exile stash value, price check, trade search and in-game hotkeys. Runs locally, no backend.",
   "private": true,
   "type": "module",
   "author": "PedroSolano",

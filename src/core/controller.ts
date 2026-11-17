@@ -301,7 +301,7 @@ export class Controller {
   async priceCheck(text: string): Promise<PriceCheckResult> {
     const league = this.settings.league
     if (!league) {
-      return { ok: false, name: 'No league selected', frameType: 0, quantity: 1, divineChaos: 0, message: 'Open Stash Ledger and pick your league first.' }
+      return { ok: false, name: 'No league selected', frameType: 0, quantity: 1, divineChaos: 0, message: "Open Exile's Companion and pick your league first." }
     }
     let cache = this.checkCache
     if (cache && cache.league === league) {

@@ -152,11 +152,11 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
             </span>
           </label>
           <div className="field">
-            <label htmlFor="overlay-key">Show / hide Stash Ledger over the game</label>
+            <label htmlFor="overlay-key">Show / hide Exile's Companion over the game</label>
             <HotkeyInput id="overlay-key" value={s.overlayKey} disabled={!s.hotkeysEnabled} onChange={(v) => set('overlayKey', v)} />
             <span className="hint">
               Press it in game to open this window on top of the game; press it again, press Esc or click the game to hide
-              it. Closing the window keeps Stash Ledger running in the tray (alerts and auto snapshots stay on); quit from the
+              it. Closing the window keeps Exile's Companion running in the tray (alerts and auto snapshots stay on); quit from the
               tray icon.
             </span>
           </div>
@@ -372,7 +372,7 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
             Open error log
           </button>
           <button className="btn" style={{ marginLeft: 10 }} onClick={() => void window.api.quit()}>
-            Quit Stash Ledger
+            Quit Exile's Companion
           </button>
           {!state.secureStorage && (
             <div className="banner" style={{ marginTop: 16 }}>

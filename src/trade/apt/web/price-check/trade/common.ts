@@ -1,5 +1,5 @@
 // Adapted from Awakened PoE Trade (MIT, see ../../../../LICENSE): renderer/src/web/price-check/trade/common.ts.
-// The network and the rate limiting live in Stash Ledger's Rust backend; requests go through the
+// The network and the rate limiting live in Exile's Companion's Rust backend; requests go through the
 // transport set with `setTradeTransport` (see src/trade/transport.ts).
 import type { ItemFilters, FilterOrGroup } from '../filters/interfaces'
 import type { ParsedItem } from '@/parser'

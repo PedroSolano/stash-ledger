@@ -110,7 +110,7 @@ async fn wait_for_code(listener: &TcpListener, path: &str, state: &str) -> Resul
             return Err("Sign-in response had an invalid state (possible forged request).".into());
         }
         if let Some(code) = q.get("code").filter(|_| !q.contains_key("error")) {
-            respond(&mut sock, "200 OK", &page("Signed in", "You can close this tab and return to Stash Ledger.")).await;
+            respond(&mut sock, "200 OK", &page("Signed in", "You can close this tab and return to Exile's Companion.")).await;
             return Ok(code.clone());
         }
         let desc = q.get("error_description").or_else(|| q.get("error")).cloned().unwrap_or_else(|| "no code".into());

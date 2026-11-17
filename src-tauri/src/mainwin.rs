@@ -26,10 +26,19 @@ fn show(w: &WebviewWindow) {
     let _ = w.set_focus();
 }
 
+/// A janela principal está visível (começa escondida; ver `setup`).
+static VISIBLE: AtomicBool = AtomicBool::new(false);
+
 /// Avisa a interface (pausa a contagem de atualização quando escondida; Esc só esconde no overlay).
 fn visible(app: &AppHandle, v: bool) {
+    VISIBLE.store(v, Ordering::Relaxed);
     let overlay = v && OVERLAY.load(Ordering::Relaxed);
     let _ = app.emit_to("main", "main-visible", serde_json::json!({ "visible": v, "overlay": overlay }));
+}
+
+/// (visível, aberta por cima do jogo)
+pub fn state() -> (bool, bool) {
+    (VISIBLE.load(Ordering::Relaxed), OVERLAY.load(Ordering::Relaxed))
 }
 
 /// Abre como janela normal (ícone da bandeja, segunda instância).

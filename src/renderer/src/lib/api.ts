@@ -1,3 +1,4 @@
+import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { check, type Update } from '@tauri-apps/plugin-updater'
@@ -40,7 +41,7 @@ const ready = controller.init()
 
 // Eventos emitidos pelo Rust (espera do rate limit da GGG, progresso do download de preços).
 void listen<ProgressEvent>('progress', (e) => progress.emit(e.payload))
-// `stash-ledger.exe --test-alert` (segunda instância) pede um alerta de teste.
+// `exiles-companion.exe --test-alert` (segunda instância) pede um alerta de teste.
 void listen('test-alert', () => void ready.then(() => controller.testAlert()).catch(() => undefined))
 // A janela vai e volta da bandeja (atalho do overlay, ícone da bandeja, botão fechar).
 void listen<WindowVisibility>('main-visible', (e) => visibility.emit(e.payload))
@@ -160,6 +161,7 @@ const api: StashLedgerApi = {
   pauseHotkeys: (paused) => pauseHotkeys(paused),
   hideWindow: () => hideWindow(),
   quit: () => quit(),
+  getVisibility: () => invoke<WindowVisibility>('main_visibility'),
   onVisibility: (cb) => {
     const off = visibility.on(cb)
     return () => void off()

@@ -1,10 +1,11 @@
-//! Backend do Stash Ledger: rede, segredos, arquivos e limites. A interface (TypeScript) roda o
+//! Backend do Exile's Companion (antigo Stash Ledger): rede, segredos, arquivos e limites. A interface (TypeScript) roda o
 //! motor de preços e só chama os comandos abaixo; cookies e tokens nunca saem deste processo.
 
 mod ggg;
 mod hotkeys;
 mod logfile;
 mod mainwin;
+mod migrate;
 mod ninja;
 mod oauth;
 mod pricewin;
@@ -99,12 +100,12 @@ impl AppState {
         let c = self.cfg();
         let id = if c.client_id.is_empty() { "unregistered" } else { &c.client_id };
         let contact = if c.contact.is_empty() { "not-provided" } else { &c.contact };
-        format!("OAuth {id}/{} (contact: {contact}) StashLedger", self.version)
+        format!("OAuth {id}/{} (contact: {contact}) ExilesCompanion", self.version)
     }
 
     fn ninja_ua(&self) -> String {
         let c = self.cfg();
-        if c.contact.is_empty() { format!("StashLedger/{}", self.version) } else { format!("StashLedger/{} (contact: {})", self.version, c.contact) }
+        if c.contact.is_empty() { format!("ExilesCompanion/{}", self.version) } else { format!("ExilesCompanion/{} (contact: {})", self.version, c.contact) }
     }
 
     fn ninja_base(&self) -> String {
@@ -249,7 +250,7 @@ fn open_external(app: AppHandle, url: String) -> Result<(), String> {
 
 #[tauri::command]
 fn open_log(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
-    let log = state.data_dir.join("stash-ledger.log");
+    let log = state.data_dir.join(logfile::FILE);
     if log.exists() {
         app.opener().reveal_item_in_dir(log).map_err(|e| e.to_string())
     } else {
@@ -539,7 +540,7 @@ async fn overlay_alert(app: AppHandle, state: State<'_, AppState>, alert: Value)
     *state.pending_alert.lock().unwrap() = Some(alert);
     let (x, y) = overlay_position(&app);
     let w = tauri::WebviewWindowBuilder::new(&app, "overlay", tauri::WebviewUrl::App("overlay.html".into()))
-        .title("Stash Ledger alert")
+        .title("Exile's Companion alert")
         .inner_size(OVERLAY_W, OVERLAY_H)
         .position(x, y)
         .decorations(false)
@@ -615,28 +616,37 @@ fn app_quit(app: AppHandle) {
     app.exit(0);
 }
 
+/// Sair de vez: a interface instala a atualização pendente (se houver) e chama app_quit.
+/// Se ela não responder, fecha mesmo assim.
+fn request_quit(app: &AppHandle) {
+    let _ = app.emit_to("main", "quit-requested", ());
+    let app = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_secs(8));
+        app.exit(0);
+    });
+}
+
+/// Estado da janela principal para a interface (ex.: começou escondida com --hidden).
+#[tauri::command]
+fn main_visibility() -> Value {
+    let (visible, overlay) = mainwin::state();
+    json!({ "visible": visible, "overlay": overlay })
+}
+
 fn build_tray(app: &tauri::App) -> tauri::Result<()> {
     use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-    let open = MenuItem::with_id(app, "open", "Open Stash Ledger", true, None::<&str>)?;
+    let open = MenuItem::with_id(app, "open", "Open Exile's Companion", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&open, &PredefinedMenuItem::separator(app)?, &quit])?;
     let mut tray = TrayIconBuilder::with_id("main")
-        .tooltip("Stash Ledger")
+        .tooltip("Exile's Companion")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {
             "open" => mainwin::show_normal(app),
-            "quit" => {
-                // A interface instala a atualização pendente (se houver) e chama app_quit.
-                // Se ela não responder, fecha mesmo assim.
-                let _ = app.emit_to("main", "quit-requested", ());
-                let app = app.clone();
-                std::thread::spawn(move || {
-                    std::thread::sleep(Duration::from_secs(8));
-                    app.exit(0);
-                });
-            }
+            "quit" => request_quit(app),
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
@@ -654,8 +664,8 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
 /* ---------- inicialização ---------- */
 
 fn build_state(app: &AppHandle) -> Result<AppState, Box<dyn std::error::Error>> {
-    // Mesma pasta da versão Electron (%APPDATA%\Stash Ledger), para manter histórico e configurações.
-    let data_dir = app.path().config_dir()?.join("Stash Ledger");
+    // %APPDATA%\Exile's Companion (migrada de "Stash Ledger", o nome antigo, na primeira execução).
+    let data_dir = migrate::data_dir(&app.path().config_dir()?);
     std::fs::create_dir_all(&data_dir)?;
     store::cleanup_legacy(&data_dir);
     let secure = secrets::available();
@@ -687,10 +697,19 @@ pub fn run() {
     tauri::Builder::default()
         // Uma instância só: evita dois processos disputando a porta do login e os arquivos.
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
-            // `stash-ledger.exe --test-alert` com o app aberto: dispara o alerta de teste sem
-            // trazer a janela para frente (útil para ver o overlay por cima do jogo).
+            // Comandos para o app que já está aberto (ex.: de um script que acompanha o jogo):
+            //   --test-alert  alerta de teste, sem trazer a janela para frente;
+            //   --quit        fecha de vez (instalando antes uma atualização pronta);
+            //   --hidden      não faz nada (já está aberto; continua na bandeja).
             if argv.iter().any(|a| a == "--test-alert") {
                 let _ = app.emit_to("main", "test-alert", ());
+                return;
+            }
+            if argv.iter().any(|a| a == "--quit") {
+                request_quit(app);
+                return;
+            }
+            if argv.iter().any(|a| a == "--hidden") {
                 return;
             }
             mainwin::show_normal(app);
@@ -716,6 +735,11 @@ pub fn run() {
                     hotkeys::set_main_window(h.0 as isize);
                 }
             }
+            // A janela começa escondida; `--hidden` (iniciado junto com o jogo) mantém o app só na bandeja.
+            if !std::env::args().any(|a| a == "--hidden") {
+                mainwin::show_normal(app.handle());
+            }
+            migrate::remove_old_install();
             Ok(())
         })
         .on_window_event(|w, e| {
@@ -773,10 +797,11 @@ pub fn run() {
             pricewin::pricecheck_visible,
             pricewin::pricecheck_hide,
             pricewin::pricecheck_resize,
+            main_visibility,
             trade_search,
             trade_fetch,
             trade_exchange
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Stash Ledger");
+        .expect("error while running Exile's Companion");
 }

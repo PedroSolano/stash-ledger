@@ -64,6 +64,8 @@ export function App() {
     api.getUpdate().then(setUpdate).catch(() => undefined)
     const offU = api.onUpdate(setUpdate)
     const offV = api.onVisibility(setVis)
+    // O app pode ter começado só na bandeja (--hidden, iniciado junto com o jogo).
+    api.getVisibility().then(setVis).catch(() => undefined)
     const timer = setInterval(() => setTick((t) => t + 1), 30_000)
     return () => {
       offP()

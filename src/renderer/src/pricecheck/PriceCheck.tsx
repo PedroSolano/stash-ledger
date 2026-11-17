@@ -392,7 +392,7 @@ export function PriceCheck(props: { dataReady: Promise<void>; register: (fn: (p:
       void props.dataReady
         .then(() => {
           setDataLoaded(true)
-          const r = payload.league ? prepareCheck(payload.text, { league: payload.league }) : { error: 'Pick your league in Stash Ledger first.' }
+          const r = payload.league ? prepareCheck(payload.text, { league: payload.league }) : { error: "Pick your league in Exile's Companion first." }
           if ('error' in r) apply(payload, undefined, r.error)
           else apply(payload, r)
         })

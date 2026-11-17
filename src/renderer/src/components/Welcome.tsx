@@ -100,9 +100,9 @@ export function Welcome({ configured, busy, error, onLogin, onCancelLogin, onSes
     <div className="welcome">
       <div className="frame welcome-card">
         <div className="brand-mark">
-          <span>S</span>
+          <span>E</span>
         </div>
-        <h1>Stash Ledger</h1>
+        <h1>Exile's Companion</h1>
         <div className="ornament" />
         <p className="lead">See what your stash is worth with poe.ninja prices. Everything runs on your computer, no server in between.</p>
 

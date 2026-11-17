@@ -101,7 +101,7 @@ pub async fn pricecheck_show(app: AppHandle, result: Value) -> Result<(), String
     } else {
         *PENDING.lock().unwrap() = Some(result);
         let w = tauri::WebviewWindowBuilder::new(&app, LABEL, tauri::WebviewUrl::App("pricecheck.html".into()))
-            .title("Stash Ledger price check")
+            .title("Exile's Companion price check")
             .inner_size(WIDTH, HEIGHT)
             .decorations(false)
             .transparent(true)

@@ -303,6 +303,8 @@ export interface StashLedgerApi {
   quit(): Promise<void>
   /** Janela visível ou escondida (bandeja / atalho do overlay); `overlay`: aberta por cima do jogo. */
   onVisibility(cb: (v: WindowVisibility) => void): () => void
+  /** Estado atual da janela (ex.: o app começou só na bandeja, com --hidden). */
+  getVisibility(): Promise<WindowVisibility>
   getUpdate(): Promise<UpdateState>
   checkUpdate(): Promise<void>
   installUpdate(): Promise<void>

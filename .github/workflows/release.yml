@@ -51,7 +51,7 @@ jobs:
           VITE_POE_CONTACT: ${{ vars.POE_CONTACT }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: Stash Ledger ${{ github.ref_name }}
+          releaseName: Exile's Companion ${{ github.ref_name }}
           releaseBody: Download the `_x64-setup.exe` file below and run it. Installed copies update themselves.
           releaseDraft: false
           prerelease: false

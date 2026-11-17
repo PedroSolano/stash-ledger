@@ -1,4 +1,4 @@
-//! Log de erros em texto simples (stash-ledger.log na pasta de dados). Nunca recebe cookies nem tokens.
+//! Log de erros em texto simples (exiles-companion.log na pasta de dados). Nunca recebe cookies nem tokens.
 
 use serde_json::Value;
 use std::fs::{self, OpenOptions};
@@ -7,6 +7,7 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const MAX_BYTES: u64 = 1_000_000;
+pub const FILE: &str = "exiles-companion.log";
 
 /// Data UTC no formato ISO 8601, sem dependências extras.
 pub fn iso_now() -> String {
@@ -27,9 +28,9 @@ pub fn iso_now() -> String {
 }
 
 pub fn append(dir: &Path, context: &str, message: &str, extra: Option<&Value>) {
-    let path = dir.join("stash-ledger.log");
+    let path = dir.join(FILE);
     if fs::metadata(&path).map(|m| m.len() > MAX_BYTES).unwrap_or(false) {
-        let _ = fs::rename(&path, dir.join("stash-ledger.log.old"));
+        let _ = fs::rename(&path, dir.join(format!("{FILE}.old")));
     }
     let mut line = format!("{} [{}] {}\n", iso_now(), context, message.replace('\n', " "));
     if let Some(x) = extra {

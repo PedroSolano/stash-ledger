@@ -1,6 +1,6 @@
 /**
  * Busca na trade no estilo do Awakened PoE Trade. O parser, os filtros e a montagem da consulta são
- * do Awakened (MIT, código em ./apt com a licença); aqui fica só a cola com o Stash Ledger.
+ * do Awakened (MIT, código em ./apt com a licença); aqui fica só a cola com o Exile's Companion.
  */
 import { init, ITEMS_ITERATOR, type BaseType } from '@/assets/data'
 import { ItemCategory, ItemRarity, makeIdentifiedUnique, parseClipboard, type ParsedItem } from '@/parser'

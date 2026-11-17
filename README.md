@@ -1,6 +1,6 @@
-# Stash Ledger
+# Exile's Companion
 
-See what your Path of Exile stash is worth, priced with **every category on poe.ninja**. Track your net worth over time and your profit per hour. Everything runs on your computer: no account on a third-party server, no middleman.
+A companion for Path of Exile (formerly **Stash Ledger**): see what your stash is worth, priced with **every category on poe.ninja**, track your net worth and profit per hour, price check items in game with an Awakened-style trade search, and use in-game hotkeys. Everything runs on your computer: no account on a third-party server, no middleman.
 
 > This product isn't affiliated with or endorsed by Grinding Gear Games in any way.
 
@@ -26,7 +26,14 @@ Requires Windows 10 or 11. The app uses Microsoft Edge WebView2, which comes wit
 
 The installer isn't code-signed yet, so Windows SmartScreen may say *"Windows protected your PC"*. Click **More info → Run anyway**. This only happens on the first install.
 
-**Coming from version 0.2 or older?** Uninstall the old version first (Windows Settings → Apps → Stash Ledger), then install this one. Your history and settings are kept; you only need to sign in again once.
+**Used it when it was called Stash Ledger?** Nothing to do: it updates itself to Exile's Companion, moves your history and settings, keeps you signed in and removes the old installation. (From version 0.2 or older, uninstall the old version first, then install this one.)
+
+### Starting it with the game
+
+- `exiles-companion.exe --hidden` starts it straight in the tray, without opening the window.
+- `exiles-companion.exe --quit` closes a running instance (installing a downloaded update first).
+
+Handy if you start your tools with a script when the game opens.
 
 ## Updates
 
@@ -44,9 +51,9 @@ Every time you open the app, it checks for a new version, downloads it in the ba
 
 1. Open [pathofexile.com](https://www.pathofexile.com) in your browser and sign in.
 2. Press **F12**, go to **Application → Cookies → https://www.pathofexile.com** and copy the value of `POESESSID` (32 characters).
-3. In Stash Ledger, click **Sign in with POESESSID**, paste it and enter your account name **including the #1234** (exactly as shown on your profile).
+3. In Exile's Companion, click **Sign in with POESESSID**, paste it and enter your account name **including the #1234** (exactly as shown on your profile).
 
-**Keep it safe.** Your POESESSID gives full access to your account on the website, so never share it with anyone. Stash Ledger stores it in the Windows Credential Manager (encrypted by Windows) and only ever sends it to pathofexile.com. To invalidate it at any time, sign out of the website (you'll then need to paste a new one in the app).
+**Keep it safe.** Your POESESSID gives full access to your account on the website, so never share it with anyone. Exile's Companion stores it in the Windows Credential Manager (encrypted by Windows) and only ever sends it to pathofexile.com. To invalidate it at any time, sign out of the website (you'll then need to paste a new one in the app).
 
 This mode uses a legacy website endpoint that isn't part of GGG's official API. Tools like this have used it for years, but GGG may change or block it at any time.
 
@@ -65,9 +72,9 @@ Markers in the item table:
 
 ### In game: overlay and hotkeys
 
-Stash Ledger is meant to stay open while you play. It has no taskbar button. Closing the window only hides it: the app keeps running in the **system tray** (next to the clock), so alerts, automatic snapshots and hotkeys keep working. Click the tray icon to open it again; right-click it and choose **Quit** to close it for real.
+Exile's Companion is meant to stay open while you play. It has no taskbar button. Closing the window only hides it: the app keeps running in the **system tray** (next to the clock), so alerts, automatic snapshots and hotkeys keep working. Click the tray icon to open it again; right-click it and choose **Quit** to close it for real.
 
-- **Shift + Space** in game opens Stash Ledger on top of the game. Press it again, press **Esc** or click the game to hide it; the game gets the focus back.
+- **Shift + Space** in game opens Exile's Companion on top of the game. Press it again, press **Esc** or click the game to hide it; the game gets the focus back.
 - **Alt + D** over an item (inventory, stash or ground) opens the **price check** next to the cursor, like Awakened PoE Trade:
   - the **poe.ninja price** right away (uniques with links and variants, currency, gems, maps, cards, cluster jewels, bases…);
   - a **trade search** with the item's mods as filters: each one with its roll, how good the roll is within its tier, and editable minimum/maximum (by default 10% below your roll). Rares use the pseudo totals (total life, total resistances), like Awakened;
@@ -108,7 +115,7 @@ Prices come from a small compressed cache on your computer. While the app is ope
 
 ## Privacy
 
-Your snapshots, settings and price cache stay on your computer (`%APPDATA%\Stash Ledger`); your session is kept in the Windows Credential Manager. The app only talks to:
+Your snapshots, settings and price cache stay on your computer (`%APPDATA%\Exile's Companion`); your session is kept in the Windows Credential Manager. The app only talks to:
 
 - **pathofexile.com**, to read your stash tabs and, for the price check, to search the trade site (anonymously, without your session);
 - **poe.ninja**, to fetch prices;
@@ -119,4 +126,4 @@ There are no analytics and no tracking.
 
 ## Uninstall
 
-Click **Log out** in the app first to remove your saved session, quit it from the tray icon, then go to **Windows Settings → Apps → Installed apps → Stash Ledger → Uninstall**. To also remove your history, delete the `%APPDATA%\Stash Ledger` folder.
+Click **Log out** in the app first to remove your saved session, quit it from the tray icon, then go to **Windows Settings → Apps → Installed apps → Exile's Companion → Uninstall**. To also remove your history, delete the `%APPDATA%\Exile's Companion` folder.

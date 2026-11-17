@@ -16,9 +16,9 @@ export function TitleBar({ overlayKey }: Props) {
     <div className="titlebar" data-tauri-drag-region>
       <span className="titlebar-brand" data-tauri-drag-region>
         <span className="brand-mark" data-tauri-drag-region>
-          <span data-tauri-drag-region>S</span>
+          <span data-tauri-drag-region>E</span>
         </span>
-        Stash Ledger
+        Exile's Companion
       </span>
       {overlayKey && (
         <span className="titlebar-hint" data-tauri-drag-region>
@@ -36,7 +36,7 @@ export function TitleBar({ overlayKey }: Props) {
         className="tb-btn close"
         onClick={() => void window.api.hideWindow()}
         aria-label="Hide to tray"
-        title="Hide (Stash Ledger keeps running in the tray: alerts, auto snapshots and hotkeys stay on)"
+        title="Hide (Exile's Companion keeps running in the tray: alerts, auto snapshots and hotkeys stay on)"
       >
         <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
           <path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" strokeWidth="1.2" />
