@@ -26,7 +26,7 @@ Requires Windows 10 or 11. The app uses Microsoft Edge WebView2, which comes wit
 
 The installer isn't code-signed yet, so Windows SmartScreen may say *"Windows protected your PC"*. Click **More info → Run anyway**. This only happens on the first install.
 
-**Used it when it was called Stash Ledger?** Nothing to do: it updates itself to Exile's Companion, moves your history and settings, keeps you signed in and removes the old installation. (From version 0.2 or older, uninstall the old version first, then install this one.)
+**Used it when it was called Stash Ledger?** Nothing to do: it updates itself to Exile's Companion, moves your history and settings, keeps you signed in, replaces the Start menu (and desktop) shortcut with "Exiles Companion" and removes the old installation. (From version 0.2 or older, uninstall the old version first, then install this one.)
 
 ### Starting it with the game
 

@@ -16,6 +16,9 @@ use std::path::{Path, PathBuf};
 
 pub const DATA_DIR: &str = "Exile's Companion";
 const OLD_NAME: &str = "Stash Ledger";
+/// Mesmo nome que o instalador usa nos atalhos (o productName, sem apóstrofo).
+#[cfg_attr(not(windows), allow(dead_code))]
+const SHORTCUT_NAME: &str = "Exiles Companion";
 
 /// Pasta de dados, migrando a antiga se ela ainda existir.
 ///
@@ -142,10 +145,33 @@ pub fn remove_old_install() {
         if me.map_or(true, |d| d.eq_ignore_ascii_case_path(&old_dir)) {
             return;
         }
+        let Ok(exe) = std::env::current_exe() else { return };
         std::thread::spawn(move || {
             // Dá tempo de o instalador novo terminar.
             std::thread::sleep(std::time::Duration::from_secs(5));
-            let _ = std::process::Command::new(&uninstaller).arg("/S").spawn();
+            // A atualização (modo update) não cria atalhos e o desinstalador antigo apaga os dele:
+            // cria os novos antes (menu Iniciar sempre; área de trabalho se havia um lá).
+            let q = |p: &Path| p.to_string_lossy().replace('\'', "''");
+            let script = format!(
+                "$ws = New-Object -ComObject WScript.Shell; $exe = '{exe}'; \
+                 function Make($dir) {{ $lnk = Join-Path $dir '{name}.lnk'; if (-not (Test-Path -LiteralPath $lnk)) {{ \
+                   $s = $ws.CreateShortcut($lnk); $s.TargetPath = $exe; $s.WorkingDirectory = (Split-Path $exe); $s.Save() }} }}; \
+                 $programs = [Environment]::GetFolderPath('Programs'); Make $programs; \
+                 $desktop = [Environment]::GetFolderPath('Desktop'); \
+                 if (Test-Path -LiteralPath (Join-Path $desktop '{old}.lnk')) {{ Make $desktop }}; \
+                 Start-Process -FilePath '{uninstaller}' -ArgumentList '/S' -Wait",
+                exe = q(&exe),
+                uninstaller = q(&uninstaller),
+                name = SHORTCUT_NAME,
+                old = OLD_NAME,
+            );
+            #[cfg(windows)]
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            let _ = std::process::Command::new("powershell.exe")
+                .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", &script])
+                .creation_flags(CREATE_NO_WINDOW)
+                .spawn();
         });
     }
 }
