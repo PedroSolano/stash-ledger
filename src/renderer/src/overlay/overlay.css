@@ -57,12 +57,11 @@ body {
   text-align: center;
   /* Topo na mesma cor do fundo do GIF (#120d08), para a sirene não ter "caixa". */
   background: linear-gradient(180deg, #120d08 0, #120d08 170px, #0c0906 100%);
-  border: 1px solid var(--bronze);
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.8),
-    inset 0 0 0 2px rgba(201, 170, 113, 0.18),
-    0 6px 22px rgba(0, 0, 0, 0.7);
-  animation: glow 0.7s ease-in-out infinite alternate;
+  background-clip: padding-box;
+  /* Moldura de painel do jogo (game.css). */
+  border: 14px solid transparent;
+  border-image: var(--poe-frame) 20 / 14px stretch;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.7);
 }
 
 .tag {

@@ -1,6 +1,7 @@
 import '@fontsource/cinzel/latin-700.css'
 import '@fontsource/alegreya-sc/latin-500.css'
 import '@fontsource/alegreya-sans/latin-500.css'
+import '../game.css'
 import './overlay.css'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'

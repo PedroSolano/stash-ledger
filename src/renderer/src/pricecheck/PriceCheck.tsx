@@ -21,7 +21,7 @@ import {
   type StatFilter,
   type TradeSearch
 } from '../../../trade'
-import { ago, num, price, rarityClass } from '../lib/format'
+import { ago, num, price } from '../lib/format'
 
 /* ---------- utilidades ---------- */
 
@@ -95,11 +95,13 @@ function clone<T>(v: T): T {
 
 /* ---------- componentes pequenos ---------- */
 
+const RARITY_NAME = ['normal', 'magic', 'rare', 'unique', 'gem', 'currency', 'card']
+
 function Chip(props: { on: boolean; onClick?: () => void; title?: string; children: React.ReactNode; warn?: boolean }) {
   return (
     <button
       type="button"
-      className={`chip${props.on ? ' on' : ''}${props.warn ? ' warn' : ''}`}
+      className={`poe-btn poe-toggle chip${props.on ? ' on' : ''}${props.warn ? ' warn' : ''}`}
       onClick={props.onClick}
       title={props.title}
       disabled={!props.onClick}
@@ -112,7 +114,7 @@ function Chip(props: { on: boolean; onClick?: () => void; title?: string; childr
 function NumInput(props: { value: number | '' | undefined; placeholder?: number; onChange: (v: number | '') => void; label: string }) {
   return (
     <input
-      className="num"
+      className="poe-input num"
       type="number"
       aria-label={props.label}
       value={props.value ?? ''}
@@ -130,6 +132,7 @@ function StatRow({ s, onChange, nested }: { s: StatFilter; onChange: () => void;
       <label className="stat-main">
         <input
           type="checkbox"
+          className="poe-check"
           checked={!s.disabled}
           onChange={(e) => {
             s.disabled = !e.target.checked
@@ -336,7 +339,6 @@ export function PriceCheck(props: { dataReady: Promise<void>; register: (fn: (p:
   const [check, setCheck] = useState<Check | null>(null)
   const [search, setSearch] = useState<SearchState>({ status: 'idle' })
   const [dataLoaded, setDataLoaded] = useState(false)
-  const [showHidden, setShowHidden] = useState(false)
   const [, bump] = useReducer((x: number) => x + 1, 0)
   const rootRef = useRef<HTMLDivElement>(null)
   const seq = useRef(0)
@@ -375,7 +377,6 @@ export function PriceCheck(props: { dataReady: Promise<void>; register: (fn: (p:
         stats: preset ? clone(preset.stats) : undefined
       }
       setCheck(c)
-      setShowHidden(false)
       seq.current++
       setSearch({ status: 'idle' })
       // Como o Awakened: pesquisa assim que abre (exceto único não identificado com várias opções).
@@ -427,7 +428,7 @@ export function PriceCheck(props: { dataReady: Promise<void>; register: (fn: (p:
     return () => window.removeEventListener('keydown', onKey)
   }, [check, runSearch])
 
-  if (!check) return <div ref={rootRef} className="pc" />
+  if (!check) return <div ref={rootRef} className="pc empty-pc" />
 
   const { payload, prepared } = check
   const ninja = payload.ninja
@@ -439,9 +440,8 @@ export function PriceCheck(props: { dataReady: Promise<void>; register: (fn: (p:
   const base = resolved ? item!.info.unique!.base : ninja.base
   const div = ninja.divineChaos
   const candidates = item && item.rarity === ItemRarity.Unique && item.isUnidentified ? uniqueCandidates(item) : []
-  const stats = check.stats ?? []
-  const visibleStats = stats.filter((s) => showHidden || !(isStatFilter(s) ? s.hidden : s.meta.hidden))
-  const hiddenCount = stats.length - visibleStats.length
+  // Todos os filtros sempre visíveis (os que o Awakened esconde vêm desmarcados).
+  const visibleStats = check.stats ?? []
   const changed = () => bump()
 
   const identify = (u: BaseType) => {
@@ -453,30 +453,28 @@ export function PriceCheck(props: { dataReady: Promise<void>; register: (fn: (p:
   const pickPreset = (id: string) => apply(payload, prepared, undefined, id)
 
   return (
-    <div ref={rootRef} className="pc">
-      <div className="pc-head">
-        <div className="pc-title">
-          <div className={`pc-name ${rarityClass(frame)}`}>
-            {ninja.quantity > 1 ? `${num(ninja.quantity)} × ` : ''}
-            {name}
-          </div>
-          {base && <div className="pc-base">{base}</div>}
+    <div ref={rootRef} className={`pc poe-panel rarity-${RARITY_NAME[frame] ?? 'normal'}`}>
+      <button type="button" className="close" onClick={() => void invoke('pricecheck_hide')} aria-label="Close" title="Close (Esc)">
+        ✕
+      </button>
+      <div className={`poe-item-head rarity-${RARITY_NAME[frame] ?? 'normal'}`}>
+        <div className="poe-item-name">
+          {ninja.quantity > 1 ? `${num(ninja.quantity)} × ` : ''}
+          {name}
         </div>
-        <button type="button" className="close" onClick={() => void invoke('pricecheck_hide')} aria-label="Close" title="Close (Esc)">
-          ✕
-        </button>
+        {base && <div className="poe-item-base">{base}</div>}
       </div>
 
       {resolved && ninja.candidates?.some((c) => c.name === name) && (
         <div className="ninja">
-          <span className="ninja-label">poe.ninja</span>
+          <span className="poe-prop">poe.ninja:</span>
           <span className="ninja-price">{price(ninja.candidates.find((c) => c.name === name)!.chaos, div)}</span>
         </div>
       )}
 
       {!resolved && ninja.ok && ninja.unitChaos !== undefined && (
         <div className="ninja">
-          <span className="ninja-label">poe.ninja</span>
+          <span className="poe-prop">poe.ninja:</span>
           <span className="ninja-price">
             {(ninja.candidates?.length ?? 0) > 1 ? 'from ' : ninja.approximate ? '≈ ' : ''}
             {price(ninja.totalChaos ?? ninja.unitChaos, div)}
@@ -489,6 +487,7 @@ export function PriceCheck(props: { dataReady: Promise<void>; register: (fn: (p:
 
       {candidates.length > 0 && (
         <div className="section">
+          <div className="poe-sep" />
           <div className="section-title">Unidentified: pick the unique to search</div>
           <div className="cands">
             {candidates.map((u) => {
@@ -519,6 +518,7 @@ export function PriceCheck(props: { dataReady: Promise<void>; register: (fn: (p:
             </div>
           )}
 
+          <div className="poe-sep" />
           <ItemChips f={check.filters} item={prepared.item} onChange={changed} />
 
           {visibleStats.length > 0 && (
@@ -537,12 +537,8 @@ export function PriceCheck(props: { dataReady: Promise<void>; register: (fn: (p:
               )}
             </div>
           )}
-          {hiddenCount > 0 && (
-            <button type="button" className="link pad" onClick={() => setShowHidden((v) => !v)}>
-              {showHidden ? 'Hide extra filters' : `Show ${hiddenCount} more filter${hiddenCount > 1 ? 's' : ''}`}
-            </button>
-          )}
 
+          <div className="poe-sep" />
           <div className="actions">
             <Chip
               on={check.filters.trade.merchantOnly}
@@ -565,7 +561,7 @@ export function PriceCheck(props: { dataReady: Promise<void>; register: (fn: (p:
               Offline too
             </Chip>
             <span className="spacer" />
-            <button type="button" className="btn" onClick={() => void runSearch(check)} disabled={search.status === 'loading'}>
+            <button type="button" className="poe-btn primary" onClick={() => void runSearch(check)} disabled={search.status === 'loading'}>
               {search.status === 'loading' ? 'Searching…' : 'Search'}
             </button>
           </div>

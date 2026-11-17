@@ -13,6 +13,7 @@ import '@fontsource/alegreya-sans/latin-700.css'
 // Precisa vir antes do App: define window.api.
 import './lib/api'
 import { App } from './App'
+import './game.css'
 import './styles.css'
 
 createRoot(document.getElementById('root')!).render(

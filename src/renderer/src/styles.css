@@ -4,7 +4,9 @@
  * romanas, UI em versalete e as cores de raridade de item usadas no jogo.
  */
 :root {
-  --font-display: 'Cinzel', 'Trajan Pro', Georgia, serif;
+  /* Títulos e interface em versalete, como o Fontin SmallCaps do jogo (Cinzel só no logotipo). */
+  --font-display: 'Alegreya SC', 'Fontin SmallCaps', Georgia, serif;
+  --font-logo: 'Cinzel', 'Trajan Pro', Georgia, serif;
   --font-ui: 'Alegreya SC', 'Fontin SmallCaps', Georgia, serif;
   --font-body: 'Alegreya Sans', 'Segoe UI', system-ui, sans-serif;
 
@@ -63,13 +65,45 @@ body {
   line-height: 1.45;
   font-variant-numeric: lining-nums;
   -webkit-font-smoothing: antialiased;
-  background-color: var(--bg);
-  /* Vinheta quente + granulado sutil, lembrando pedra escura. */
+  /* Fundo de pedra escura, como atrás dos painéis do jogo. */
+  background-color: #070605;
   background-image:
-    radial-gradient(ellipse at 50% -10%, rgba(120, 82, 36, 0.18), transparent 60%),
-    radial-gradient(ellipse at 50% 120%, rgba(60, 30, 10, 0.25), transparent 55%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.6 0 0 0 0 0.5 0 0 0 0 0.35 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    radial-gradient(ellipse at 50% 0%, rgba(70, 50, 28, 0.22), transparent 60%),
+    radial-gradient(ellipse at 50% 110%, rgba(0, 0, 0, 0.7), transparent 60%),
+    var(--poe-noise);
   background-attachment: fixed;
+}
+
+/* Caixas de seleção no estilo do jogo (losango dourado ao marcar). */
+input[type='checkbox'] {
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  background: linear-gradient(180deg, #0b0907, #17120d);
+  border: 1px solid #6e5634;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.9);
+  cursor: pointer;
+}
+input[type='checkbox']::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  background: linear-gradient(135deg, #f0d79a, #a67d3e);
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.08s;
+}
+input[type='checkbox']:checked::after {
+  transform: rotate(45deg) scale(1);
+}
+input[type='checkbox']:hover:not(:disabled) {
+  border-color: var(--poe-gold);
+}
+input[type='checkbox']:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 button,
@@ -125,33 +159,18 @@ code {
 
 /* ---------- molduras ---------- */
 
-/* Cantos dourados em "L" nos quatro cantos de qualquer painel. */
+/* Painel do jogo: moldura de ferro com filete dourado e losangos nos cantos (game.css). */
 .frame {
   position: relative;
-  background: linear-gradient(180deg, rgba(24, 19, 14, 0.96), rgba(15, 12, 9, 0.96));
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.7),
-    inset 0 1px 0 rgba(236, 212, 155, 0.06),
-    0 10px 30px rgba(0, 0, 0, 0.5);
-}
-.frame::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  pointer-events: none;
-  --c: var(--gold);
-  background:
-    linear-gradient(var(--c), var(--c)) top left / 16px 1px no-repeat,
-    linear-gradient(var(--c), var(--c)) top left / 1px 16px no-repeat,
-    linear-gradient(var(--c), var(--c)) top right / 16px 1px no-repeat,
-    linear-gradient(var(--c), var(--c)) top right / 1px 16px no-repeat,
-    linear-gradient(var(--c), var(--c)) bottom left / 16px 1px no-repeat,
-    linear-gradient(var(--c), var(--c)) bottom left / 1px 16px no-repeat,
-    linear-gradient(var(--c), var(--c)) bottom right / 16px 1px no-repeat,
-    linear-gradient(var(--c), var(--c)) bottom right / 1px 16px no-repeat;
-  opacity: 0.75;
+  border: 14px solid transparent;
+  border-image: var(--poe-frame) 20 / 14px stretch;
+  background-color: var(--poe-stone);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(92, 70, 40, 0.14), transparent 65%),
+    radial-gradient(ellipse at 50% 100%, rgba(0, 0, 0, 0.5), transparent 70%),
+    var(--poe-noise);
+  background-clip: padding-box;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
 }
 
 /* Divisor ornamental: linha – losango – linha. */
@@ -179,68 +198,72 @@ code {
 
 /* ---------- botões e campos ---------- */
 
+/* Botões do jogo: borda dupla de bronze com bisel (mesma arte de .poe-btn em game.css). */
 .btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 34px;
+  height: 32px;
   padding: 0 16px;
   font-family: var(--font-ui);
   font-size: 16px;
-  letter-spacing: 0.02em;
-  color: var(--gold);
-  background: linear-gradient(180deg, #2a2219, #16110c);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
+  letter-spacing: 0.03em;
+  color: #d8c597;
+  text-shadow: 0 1px 1px #000;
+  background: linear-gradient(180deg, #3b2d1d 0%, #22190f 47%, #140e09 53%, #22180e 100%);
+  border: 1px solid #000;
+  border-radius: 0;
   box-shadow:
-    inset 0 1px 0 rgba(255, 225, 160, 0.08),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.6);
+    inset 0 0 0 1px #7a5f36,
+    inset 0 0 0 2px #150f09,
+    inset 0 3px 0 1px rgba(255, 214, 150, 0.07),
+    0 1px 2px rgba(0, 0, 0, 0.8);
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.12s, border-color 0.12s, box-shadow 0.12s, background 0.12s;
 }
 .btn:hover:not(:disabled) {
-  color: var(--gold-bright);
-  border-color: var(--bronze);
+  color: #f3e4ba;
   box-shadow:
-    inset 0 1px 0 rgba(255, 225, 160, 0.12),
-    0 0 10px rgba(201, 170, 113, 0.18);
+    inset 0 0 0 1px #c19a55,
+    inset 0 0 0 2px #150f09,
+    inset 0 3px 0 1px rgba(255, 214, 150, 0.12),
+    0 0 8px rgba(214, 170, 90, 0.25);
 }
 .btn:active:not(:disabled) {
-  background: linear-gradient(180deg, #16110c, #2a2219);
+  background: linear-gradient(180deg, #120c07, #22180e);
 }
 .btn:disabled {
   opacity: 0.45;
   cursor: default;
 }
 .btn.primary {
-  color: #f6e2ae;
-  background: linear-gradient(180deg, #6a4a1f 0%, #4a3115 45%, #2c1c0b 100%);
-  border-color: #a8834a;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  color: #f1dba3;
+  background: linear-gradient(180deg, #57391a 0%, #33210f 47%, #1f1309 53%, #3a2511 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 220, 150, 0.25),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(0, 0, 0, 0.6);
+    inset 0 0 0 1px #c9a660,
+    inset 0 0 0 2px #1a1009,
+    inset 0 3px 0 1px rgba(255, 214, 150, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.8);
 }
 .btn.primary:hover:not(:disabled) {
   color: #fff1cc;
-  background: linear-gradient(180deg, #7c5826 0%, #573a19 45%, #34220d 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 220, 150, 0.3),
-    0 0 16px rgba(230, 170, 80, 0.3);
+    inset 0 0 0 1px #e4c27c,
+    inset 0 0 0 2px #1a1009,
+    inset 0 3px 0 1px rgba(255, 214, 150, 0.16),
+    0 0 12px rgba(230, 180, 90, 0.35);
 }
+/* Botão discreto (barra superior, ações secundárias): só texto até o mouse passar. */
 .btn.ghost {
-  color: var(--text-2);
+  color: var(--poe-text-dim);
   background: transparent;
-  border-color: transparent;
   box-shadow: none;
+  border-color: transparent;
 }
 .btn.ghost:hover:not(:disabled) {
-  color: var(--gold-bright);
-  background: rgba(201, 170, 113, 0.06);
-  border-color: transparent;
-  box-shadow: none;
+  color: var(--poe-gold-bright);
+  background: linear-gradient(180deg, rgba(59, 45, 29, 0.6), rgba(20, 14, 9, 0.6));
+  box-shadow: inset 0 0 0 1px #5a4628;
 }
 .btn.big {
   height: 46px;
@@ -252,13 +275,13 @@ code {
 
 .input,
 .select {
-  height: 34px;
+  height: 32px;
   padding: 0 10px;
-  color: var(--text-bright);
-  background: var(--inset);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.7);
+  color: #fff;
+  background: #050403;
+  border: 1px solid #4a3b28;
+  border-radius: 0;
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.95);
   min-width: 0;
 }
 .input::placeholder {
@@ -435,15 +458,17 @@ kbd {
   height: 100%;
 }
 
+/* Barra de comandos: metal escuro com filete dourado embaixo, como as barras do jogo. */
 .topbar {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 22px;
-  background: linear-gradient(180deg, #1c1611 0%, #0f0c09 100%);
+  gap: 10px;
+  padding: 9px 22px;
+  background: linear-gradient(180deg, #2b2219 0%, #15100c 55%, #0d0a07 100%);
+  border-top: 1px solid #3d3122;
   border-bottom: 1px solid #000;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.7);
   z-index: 2;
 }
 .topbar::after {
@@ -453,7 +478,7 @@ kbd {
   right: 0;
   bottom: -2px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--bronze) 20%, var(--gold) 50%, var(--bronze) 80%, transparent);
+  background: linear-gradient(90deg, transparent, #7a6038 10%, #c9a660 50%, #7a6038 90%, transparent);
 }
 .brand {
   display: flex;
@@ -651,7 +676,7 @@ kbd {
 }
 
 .card {
-  padding: 16px 18px;
+  padding: 6px 10px 10px;
   /* Itens de grade não podem ser mais largos que a coluna (nada escapa do painel). */
   min-width: 0;
 }
@@ -666,26 +691,29 @@ kbd {
   margin: 0;
   white-space: nowrap;
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 15px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--gold);
+  font-weight: 500;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: var(--poe-gold-bright);
+  text-shadow: 0 1px 2px #000;
 }
 .card .sub,
 .sub {
   color: var(--muted);
   font-size: 13px;
 }
+/* Cabeçalho de painel como no jogo: faixa escura entre filetes dourados. */
 .card-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin: -2px 0 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid transparent;
-  border-image: linear-gradient(90deg, var(--bronze), rgba(122, 98, 64, 0.15) 70%, transparent) 1;
+  margin: -6px -10px 12px;
+  padding: 5px 12px;
+  min-height: 38px;
+  background:
+    linear-gradient(90deg, transparent, rgba(184, 148, 90, 0.8) 12%, rgba(184, 148, 90, 0.8) 88%, transparent) bottom / 100% 1px no-repeat,
+    linear-gradient(180deg, #2a2118, #120e0a 60%, #19130e);
 }
 .card-head .spacer {
   flex: 1;
@@ -773,7 +801,7 @@ kbd {
 .tile .label {
   font-family: var(--font-ui);
   font-size: 16px;
-  color: var(--gold-dim);
+  color: var(--poe-label);
 }
 .tile .value {
   margin-top: 4px;
@@ -783,11 +811,12 @@ kbd {
 }
 .tile .hero {
   margin-top: 2px;
-  font-size: 52px;
+  font-family: var(--font-display);
+  font-size: 50px;
   font-weight: 500;
   line-height: 1.05;
-  color: var(--text-bright);
-  text-shadow: 0 0 18px rgba(201, 170, 113, 0.18);
+  color: #fff;
+  text-shadow: 0 0 18px rgba(255, 230, 180, 0.15), 0 2px 3px #000;
 }
 .tile .meta {
   margin-top: 4px;
@@ -1139,18 +1168,21 @@ kbd {
   padding: 14px 20px;
 }
 .modal header {
-  border-bottom: 1px solid transparent;
-  border-image: linear-gradient(90deg, transparent, var(--bronze) 20%, var(--gold) 50%, var(--bronze) 80%, transparent) 1;
+  padding: 6px 12px;
+  background:
+    linear-gradient(90deg, transparent, rgba(184, 148, 90, 0.85) 12%, rgba(184, 148, 90, 0.85) 88%, transparent) bottom / 100% 1px no-repeat,
+    linear-gradient(180deg, #2a2118, #120e0a 60%, #19130e);
 }
 .modal header h2 {
   flex: 1;
   margin: 0;
+  text-align: center;
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 17px;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--gold-bright);
+  font-weight: 500;
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  color: var(--poe-gold-bright);
+  text-shadow: 0 1px 2px #000;
 }
 .modal footer {
   justify-content: flex-end;
@@ -1198,23 +1230,27 @@ kbd {
   margin-top: 4px;
   accent-color: var(--gold);
 }
+/* Título de seção: texto entre filetes, com losangos, como os divisores do jogo. */
 .section-title {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 20px 0 12px;
+  margin: 22px 0 12px;
   font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--gold-dim);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--poe-gold-bright);
 }
+.section-title::before,
 .section-title::after {
   content: '';
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, var(--line-strong), transparent);
+  background: linear-gradient(90deg, transparent, #7a6038);
+}
+.section-title::after {
+  background: linear-gradient(90deg, #7a6038, transparent);
 }
 .section-title:first-child {
   margin-top: 0;

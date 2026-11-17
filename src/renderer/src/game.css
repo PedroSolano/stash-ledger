@@ -1,0 +1,270 @@
+/*
+ * "Pele" do jogo: painéis, barras de título, botões, cabeçalhos de item e separadores imitando a
+ * interface do Path of Exile. Arte 100% própria (CSS + SVG desenhado aqui), sem arquivos da GGG.
+ * Compartilhado pela janela principal, pelo price check e pelo alerta.
+ */
+
+:root {
+  --poe-font: 'Alegreya SC', 'Fontin SmallCaps', Georgia, serif;
+  --poe-font-body: 'Alegreya Sans', 'Segoe UI', system-ui, sans-serif;
+
+  /* Pedra escura do inventário */
+  --poe-stone: #0d0b09;
+  --poe-stone-2: #15110d;
+  --poe-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .45 0 0 0 0 .32 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* Metal e ouro das molduras */
+  --poe-iron: #2a231a;
+  --poe-bronze: #7a6038;
+  --poe-gold: #b8945a;
+  --poe-gold-bright: #e4cb8f;
+  --poe-text: #c9bfa8;
+  --poe-text-dim: #8c826f;
+  --poe-label: #7f7f7f;
+  --poe-value: #ffffff;
+  --poe-mod: #8888ff;
+  --poe-crafted: #b4b4ff;
+  --poe-fractured: #a29162;
+
+  /* Moldura de painel (9 fatias de 20 px): borda de ferro com bisel, filete dourado e losango
+     ornamental em cada canto. */
+  --poe-frame: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234d3f2c'/%3E%3Cstop offset='.45' stop-color='%231c1712'/%3E%3Cstop offset='1' stop-color='%23382d20'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23g)' fill-rule='evenodd' d='M0 0H60V60H0Z M8 8V52H52V8Z'/%3E%3Crect x='.5' y='.5' width='59' height='59' fill='none' stroke='%23040302'/%3E%3Crect x='3.5' y='3.5' width='53' height='53' fill='none' stroke='%23705b3b' stroke-opacity='.5'/%3E%3Crect x='8.5' y='8.5' width='43' height='43' fill='none' stroke='%23a8854b'/%3E%3Crect x='9.5' y='9.5' width='41' height='41' fill='none' stroke='%23000' stroke-opacity='.75'/%3E%3Cg fill='%23140f0a' stroke='%23c9a660'%3E%3Cpath d='M9 1.5 16.5 9 9 16.5 1.5 9Z'/%3E%3Cpath d='M51 1.5 58.5 9 51 16.5 43.5 9Z'/%3E%3Cpath d='M9 43.5 16.5 51 9 58.5 1.5 51Z'/%3E%3Cpath d='M51 43.5 58.5 51 51 58.5 43.5 51Z'/%3E%3C/g%3E%3Cg fill='%23e0c27e'%3E%3Ccircle cx='9' cy='9' r='1.7'/%3E%3Ccircle cx='51' cy='9' r='1.7'/%3E%3Ccircle cx='9' cy='51' r='1.7'/%3E%3Ccircle cx='51' cy='51' r='1.7'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ---------- painel ---------- */
+
+.poe-panel {
+  position: relative;
+  border: 14px solid transparent;
+  border-image: var(--poe-frame) 20 / 14px stretch;
+  background-color: var(--poe-stone);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(92, 70, 40, 0.16), transparent 65%),
+    radial-gradient(ellipse at 50% 100%, rgba(0, 0, 0, 0.55), transparent 70%),
+    var(--poe-noise);
+  background-clip: padding-box;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65);
+}
+
+/* Barra de título de painel (como "Inventory"): faixa escura entre filetes, texto centralizado. */
+.poe-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 30px;
+  padding: 3px 34px;
+  font-family: var(--poe-font);
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  color: var(--poe-gold-bright);
+  text-shadow: 0 1px 2px #000;
+  background:
+    linear-gradient(90deg, transparent, rgba(184, 148, 90, 0.85) 18%, rgba(184, 148, 90, 0.85) 82%, transparent) top / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent, rgba(184, 148, 90, 0.85) 18%, rgba(184, 148, 90, 0.85) 82%, transparent) bottom / 100% 1px no-repeat,
+    linear-gradient(180deg, #2a2118, #120e0a 55%, #1b150f);
+}
+.poe-title::before,
+.poe-title::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex: none;
+  transform: rotate(45deg);
+  border: 1px solid var(--poe-gold);
+  background: #140f0a;
+}
+
+/* Separador entre seções (cor da raridade em --edge). */
+.poe-sep {
+  height: 9px;
+  margin: 2px 12px;
+  --edge: var(--poe-bronze);
+  background: linear-gradient(90deg, transparent, var(--edge) 18%, var(--edge) 82%, transparent) center / 100% 1px no-repeat;
+  opacity: 0.8;
+}
+
+/* ---------- botões ---------- */
+
+.poe-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 16px;
+  font-family: var(--poe-font);
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  color: #d8c597;
+  text-shadow: 0 1px 1px #000;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #3b2d1d 0%, #22190f 47%, #140e09 53%, #22180e 100%);
+  border: 1px solid #000;
+  border-radius: 0;
+  box-shadow:
+    inset 0 0 0 1px #7a5f36,
+    inset 0 0 0 2px #150f09,
+    inset 0 3px 0 1px rgba(255, 214, 150, 0.07),
+    0 1px 2px rgba(0, 0, 0, 0.8);
+  cursor: pointer;
+}
+.poe-btn:hover:not(:disabled) {
+  color: #f3e4ba;
+  box-shadow:
+    inset 0 0 0 1px #c19a55,
+    inset 0 0 0 2px #150f09,
+    inset 0 3px 0 1px rgba(255, 214, 150, 0.12),
+    0 0 8px rgba(214, 170, 90, 0.25);
+}
+.poe-btn:active:not(:disabled) {
+  background: linear-gradient(180deg, #120c07, #22180e);
+}
+.poe-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* Ação principal: moldura dourada mais forte. */
+.poe-btn.primary {
+  color: #f1dba3;
+  background: linear-gradient(180deg, #57391a 0%, #33210f 47%, #1f1309 53%, #3a2511 100%);
+  box-shadow:
+    inset 0 0 0 1px #c9a660,
+    inset 0 0 0 2px #1a1009,
+    inset 0 3px 0 1px rgba(255, 214, 150, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.8);
+}
+/* Botão pequeno de alternância (filtros): apagado quando desligado. */
+.poe-toggle {
+  height: 24px;
+  padding: 0 9px;
+  font-size: 13px;
+  color: var(--poe-text-dim);
+  background: linear-gradient(180deg, #1b150f, #0e0b08);
+  box-shadow: inset 0 0 0 1px #3b2f20, 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.poe-toggle.on {
+  color: #ecdcae;
+  background: linear-gradient(180deg, #3b2d1d 0%, #22190f 47%, #140e09 53%, #22180e 100%);
+  box-shadow:
+    inset 0 0 0 1px #9c7a43,
+    inset 0 0 0 2px #150f09,
+    0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* ---------- campos ---------- */
+
+.poe-check {
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  flex: none;
+  background: linear-gradient(180deg, #0b0907, #17120d);
+  border: 1px solid #6e5634;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.9);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.poe-check::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  background: linear-gradient(135deg, #f0d79a, #a67d3e);
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.08s;
+  box-shadow: 0 0 4px rgba(240, 215, 154, 0.6);
+}
+.poe-check:checked::after {
+  transform: rotate(45deg) scale(1);
+}
+.poe-check:hover {
+  border-color: #b8945a;
+}
+
+.poe-input {
+  height: 24px;
+  padding: 0 6px;
+  font-family: var(--poe-font-body);
+  font-size: 13px;
+  color: #fff;
+  background: #050403;
+  border: 1px solid #4a3b28;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+.poe-input:focus {
+  outline: none;
+  border-color: var(--poe-gold);
+}
+.poe-input::placeholder {
+  color: #5d554a;
+}
+
+/* ---------- cabeçalho de item por raridade (como na dica do item no jogo) ---------- */
+
+.poe-item-head {
+  --band: #24221f;
+  --edge: #8a8a80;
+  --name: #c8c8c8;
+  position: relative;
+  padding: 6px 30px 7px;
+  text-align: center;
+  font-family: var(--poe-font);
+  color: var(--name);
+  background:
+    linear-gradient(90deg, transparent, var(--edge) 10%, var(--edge) 90%, transparent) top / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent, var(--edge) 10%, var(--edge) 90%, transparent) bottom / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent, var(--band) 8%, var(--band) 92%, transparent);
+}
+/* Ornamentos das pontas: losango com haste. */
+.poe-item-head::before,
+.poe-item-head::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  margin-top: -5px;
+  transform: rotate(45deg);
+  border: 1px solid var(--edge);
+  background: #0a0806;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--edge) 45%, transparent);
+}
+.poe-item-head::before {
+  left: 9px;
+}
+.poe-item-head::after {
+  right: 9px;
+}
+.poe-item-head .poe-item-name {
+  font-size: 18px;
+  line-height: 1.15;
+  text-shadow: 0 1px 2px #000;
+}
+.poe-item-head .poe-item-base {
+  font-size: 16px;
+  line-height: 1.15;
+  text-shadow: 0 1px 2px #000;
+}
+
+.rarity-normal { --band: #26241f; --edge: #8d8a80; --name: #c8c8c8; }
+.rarity-magic { --band: #1a1c35; --edge: #5b5bc4; --name: #8888ff; }
+.rarity-rare { --band: #2e2a0e; --edge: #b4a440; --name: #ffff77; }
+.rarity-unique { --band: #2f190b; --edge: #b0652a; --name: #af6025; }
+.rarity-gem { --band: #0e2724; --edge: #1ba29b; --name: #1ba29b; }
+.rarity-currency { --band: #25200f; --edge: #aa9e82; --name: #aa9e82; }
+.rarity-card { --band: #0f2232; --edge: #0ebaff; --name: #0ebaff; }
+
+/* Texto de dica de item: rótulos cinza, valores brancos, modificadores azuis. */
+.poe-prop {
+  color: var(--poe-label);
+}
+.poe-prop b {
+  color: var(--poe-value);
+  font-weight: 400;
+}
+.poe-mod {
+  color: var(--poe-mod);
+}

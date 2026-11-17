@@ -1,23 +1,4 @@
-/* Price check (estilo Awakened PoE Trade) com a identidade visual do app. */
-:root {
-  --gold: #c9aa71;
-  --gold-bright: #ecd49b;
-  --bronze: #7a6240;
-  --line: #33291d;
-  --text: #d9d0bf;
-  --text-2: #a99f8d;
-  --muted: #7f786a;
-  --warn: #d9a441;
-  --bad: #e0614f;
-  --good: #7cc46a;
-  --r-normal: #c8c8c8;
-  --r-magic: #8888ff;
-  --r-rare: #ffff77;
-  --r-unique: #af6025;
-  --r-gem: #1ba29b;
-  --r-currency: #aa9e82;
-  --r-card: #0ebaff;
-}
+/* Price check: painel do jogo (game.css) + o que é específico desta janela. */
 
 html,
 body {
@@ -36,229 +17,197 @@ body {
   width: 440px;
   max-height: 100vh;
   overflow-y: auto;
-  font-family: 'Alegreya Sans', 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--poe-font-body);
   font-size: 14px;
-  color: var(--text);
-  background: linear-gradient(180deg, rgba(24, 19, 13, 0.98), rgba(10, 8, 6, 0.98));
-  border: 1px solid var(--bronze);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.8), inset 0 0 0 2px rgba(201, 170, 113, 0.12);
+  color: var(--poe-text);
   scrollbar-width: thin;
-  scrollbar-color: var(--bronze) transparent;
+  scrollbar-color: var(--poe-bronze) transparent;
 }
-
-.pc:empty {
+.pc.empty-pc {
   border: 0;
   background: transparent;
-}
-
-.pc-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 9px 10px 7px 14px;
-  background: linear-gradient(180deg, rgba(201, 170, 113, 0.1), transparent);
-  border-bottom: 1px solid rgba(122, 98, 64, 0.55);
-}
-
-.pc-title {
-  flex: 1;
-  min-width: 0;
-}
-
-.pc-name {
-  font-family: 'Cinzel', Georgia, serif;
-  font-weight: 700;
-  font-size: 16px;
-  line-height: 1.2;
-  text-shadow: 0 1px 2px #000;
-}
-
-.pc-base {
-  font-size: 13px;
-  color: var(--text-2);
+  box-shadow: none;
 }
 
 .close {
-  border: 0;
-  background: transparent;
-  color: var(--text-2);
-  font-size: 14px;
-  padding: 2px 6px;
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+  color: #a8987a;
+  background: linear-gradient(180deg, #2b2117, #120d09);
+  border: 1px solid #000;
+  box-shadow: inset 0 0 0 1px #6e5634;
   cursor: pointer;
 }
 .close:hover {
   color: #fff;
-  background: #8c2a1c;
+  box-shadow: inset 0 0 0 1px #c19a55;
+  background: linear-gradient(180deg, #5a1d12, #2a0c07);
+}
+
+.poe-item-head {
+  margin: 0 22px 0 0;
 }
 
 .ninja {
   display: flex;
+  justify-content: center;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 7px 14px;
-  border-bottom: 1px solid var(--line);
-}
-.ninja-label {
-  font-family: 'Alegreya SC', Georgia, serif;
-  font-size: 12px;
-  color: var(--muted);
+  gap: 6px 8px;
+  padding: 6px 10px 2px;
+  font-family: var(--poe-font);
+  font-size: 15px;
 }
 .ninja-price {
-  font-family: 'Cinzel', Georgia, serif;
-  font-weight: 700;
   font-size: 19px;
-  color: var(--gold-bright);
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255, 240, 200, 0.25);
 }
 .ninja-sub {
-  color: var(--text-2);
-  font-size: 13px;
+  color: var(--poe-label);
+  font-size: 14px;
 }
 
 .tag {
   padding: 0 6px;
   font-size: 12px;
-  border: 1px solid var(--line);
+  border: 1px solid #3b2f20;
 }
 .tag.warn {
-  color: var(--warn);
+  color: #d9a441;
   border-color: rgba(217, 164, 65, 0.5);
 }
 
 .section {
-  padding: 8px 14px;
-  border-bottom: 1px solid var(--line);
+  padding: 0 4px 6px;
 }
 .section-title {
-  font-family: 'Alegreya SC', Georgia, serif;
-  font-size: 13px;
-  color: var(--gold);
-  margin-bottom: 6px;
+  margin: 2px 0 6px;
+  text-align: center;
+  font-family: var(--poe-font);
+  font-size: 14px;
+  color: var(--poe-gold-bright);
 }
 
 .cands {
   display: grid;
-  gap: 2px;
+  gap: 3px;
 }
 .cand {
   display: flex;
   justify-content: space-between;
-  padding: 4px 8px;
-  font: inherit;
+  padding: 4px 10px;
+  font-family: var(--poe-font);
+  font-size: 15px;
   color: inherit;
   text-align: left;
-  background: rgba(201, 170, 113, 0.05);
-  border: 1px solid transparent;
-  border-left: 2px solid rgba(175, 96, 37, 0.6);
+  background: linear-gradient(90deg, rgba(47, 25, 11, 0.85), rgba(20, 12, 7, 0.6));
+  border: 1px solid #3a2414;
   cursor: pointer;
 }
 .cand:hover {
-  border-color: var(--bronze);
-  background: rgba(201, 170, 113, 0.12);
+  border-color: #b0652a;
+  background: linear-gradient(90deg, rgba(80, 40, 15, 0.9), rgba(30, 16, 8, 0.7));
 }
 .cand-price {
-  color: var(--gold-bright);
+  color: #fff;
 }
 
 .presets {
   display: flex;
+  justify-content: center;
   gap: 4px;
-  padding: 8px 14px 0;
+  padding: 4px 4px 0;
 }
 .preset {
-  padding: 2px 10px;
-  font-family: 'Alegreya SC', Georgia, serif;
+  height: 24px;
+  padding: 0 12px;
+  font-family: var(--poe-font);
   font-size: 13px;
-  color: var(--text-2);
+  color: var(--poe-text-dim);
   text-transform: capitalize;
-  background: transparent;
-  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #1b150f, #0e0b08);
+  border: 1px solid #000;
+  box-shadow: inset 0 0 0 1px #3b2f20;
   cursor: pointer;
 }
 .preset.on {
-  color: var(--gold-bright);
-  border-color: var(--bronze);
-  background: rgba(201, 170, 113, 0.1);
+  color: #ecdcae;
+  box-shadow: inset 0 0 0 1px #9c7a43;
+  background: linear-gradient(180deg, #3b2d1d, #140e09);
 }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 5px;
-  padding: 8px 14px;
+  padding: 2px 4px 6px;
 }
-.chip {
-  padding: 2px 9px;
-  font: inherit;
-  font-size: 13px;
-  color: var(--muted);
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--line);
-  cursor: pointer;
-  text-decoration: line-through;
-  text-decoration-color: rgba(127, 120, 106, 0.6);
-}
-.chip.on {
-  color: var(--text);
-  border-color: var(--bronze);
-  background: rgba(201, 170, 113, 0.1);
-  text-decoration: none;
-}
-.chip.warn {
-  color: var(--bad);
+.chip.warn.on {
+  color: #ff6b5a;
 }
 .chip:disabled {
   cursor: default;
-  text-decoration: none;
 }
 
 .stats {
-  padding: 2px 8px 4px;
+  padding: 0 2px 4px;
 }
 .stat {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 6px;
-  border-bottom: 1px solid rgba(51, 41, 29, 0.6);
+  padding: 4px 4px;
+  border-bottom: 1px solid rgba(59, 47, 32, 0.45);
 }
-.stat.off .stat-text {
-  color: var(--muted);
+.stat:last-child {
+  border-bottom: 0;
 }
 .stat.nested {
-  padding-left: 24px;
+  padding-left: 22px;
 }
 .stat-main {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: 7px;
   cursor: pointer;
 }
-.stat-main input {
-  margin-top: 3px;
-  accent-color: var(--gold);
+.stat-main .poe-check {
+  margin-top: 2px;
 }
 .stat-text {
   line-height: 1.3;
-  color: #8888ff;
+  color: var(--poe-mod);
+}
+.stat.off .stat-text {
+  color: #5a5a8a;
 }
 .stat-tag {
   margin-left: 6px;
   padding: 0 4px;
+  font-family: var(--poe-font);
   font-size: 11px;
-  color: var(--muted);
-  border: 1px solid var(--line);
+  color: var(--poe-label);
+  border: 1px solid #2f261b;
 }
 .stat-tag.t-pseudo {
-  color: var(--gold);
+  color: var(--poe-gold);
 }
 .stat-tag.t-crafted {
-  color: #b4b4ff;
+  color: var(--poe-crafted);
 }
 .stat-tag.t-fractured {
-  color: #a29162;
+  color: var(--poe-fractured);
 }
 .stat-roll {
   display: flex;
@@ -268,25 +217,16 @@ body {
 }
 .pct {
   width: 38px;
+  height: 18px;
+  line-height: 16px;
   font-size: 11px;
   text-align: center;
-  color: var(--text-2);
-  background: linear-gradient(90deg, rgba(124, 196, 106, 0.35) var(--p), rgba(0, 0, 0, 0.35) var(--p));
-  border: 1px solid var(--line);
+  color: #d8d0bc;
+  background: linear-gradient(90deg, rgba(120, 160, 70, 0.45) var(--p), rgba(0, 0, 0, 0.5) var(--p));
+  border: 1px solid #3b2f20;
 }
 .num {
   width: 52px;
-  padding: 1px 4px;
-  font: inherit;
-  font-size: 13px;
-  color: var(--text);
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid var(--line);
-  user-select: text;
-}
-.num:focus {
-  outline: none;
-  border-color: var(--gold);
 }
 .num::-webkit-inner-spin-button {
   display: none;
@@ -296,28 +236,14 @@ body {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 8px 14px;
-  border-top: 1px solid var(--line);
+  padding: 2px 4px 6px;
 }
 .spacer {
   flex: 1;
 }
-.btn {
-  padding: 3px 16px;
-  font-family: 'Alegreya SC', Georgia, serif;
-  font-size: 14px;
-  color: #f6e2ae;
-  background: linear-gradient(180deg, #6a4a1f 0%, #4a3115 45%, #2c1c0b 100%);
-  border: 1px solid #a8834a;
-  cursor: pointer;
-}
-.btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
 
 .results {
-  padding: 0 14px 6px;
+  padding: 0 4px 4px;
 }
 .listings {
   width: 100%;
@@ -325,96 +251,91 @@ body {
 }
 .listings td {
   padding: 3px 4px;
-  border-bottom: 1px solid rgba(51, 41, 29, 0.6);
+  border-bottom: 1px solid rgba(59, 47, 32, 0.45);
   white-space: nowrap;
 }
 .listings .lp {
-  font-weight: 500;
-  color: var(--gold-bright);
+  font-family: var(--poe-font);
+  font-size: 15px;
+  color: #fff;
 }
 .listings .cur {
-  color: var(--text-2);
-  font-weight: 400;
+  color: var(--poe-label);
 }
 .listings .li {
-  color: var(--text-2);
-  font-size: 13px;
   width: 100%;
+  font-size: 13px;
+  color: var(--poe-label);
 }
 .listings .la {
-  color: var(--muted);
   font-size: 12px;
+  color: #6e665a;
   text-align: right;
 }
 .dot {
   display: inline-block;
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background: #555;
+  transform: rotate(45deg);
+  background: #4a4a4a;
+  border: 1px solid #000;
 }
 .dot.online {
-  background: var(--good);
+  background: #6fbf5a;
 }
 .dot.afk {
-  background: var(--warn);
+  background: #d9a441;
 }
 .bulk-head {
   margin: 6px 0 2px;
-  font-family: 'Alegreya SC', Georgia, serif;
-  font-size: 13px;
-  color: var(--gold);
+  text-align: center;
+  font-family: var(--poe-font);
+  font-size: 14px;
+  color: var(--poe-gold-bright);
 }
 .res-foot,
 .pc-foot {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px 14px 7px;
+  padding: 5px 4px 0;
   font-size: 12px;
-  color: var(--muted);
-}
-.res-foot {
-  padding: 5px 0 0;
+  color: #6e665a;
 }
 .pc-foot {
-  border-top: 1px solid var(--line);
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(59, 47, 32, 0.6);
 }
 .link {
   border: 0;
   padding: 0;
-  font: inherit;
+  font-family: var(--poe-font);
   font-size: 13px;
-  color: var(--gold);
+  color: var(--poe-gold);
   background: none;
   cursor: pointer;
 }
 .link:hover {
-  color: var(--gold-bright);
-  text-decoration: underline;
-}
-.link.pad {
-  margin: 2px 14px 6px;
+  color: var(--poe-gold-bright);
 }
 .muted {
-  color: var(--text-2);
+  color: var(--poe-text-dim);
 }
 .pad {
-  padding: 8px 14px;
+  padding: 8px 6px;
 }
 .empty {
   padding: 8px 0;
-  color: var(--text-2);
+  text-align: center;
+  color: var(--poe-text-dim);
 }
 .error {
   padding: 8px 0;
-  color: var(--bad);
+  text-align: center;
+  color: #e0614f;
 }
 
-.r-normal { color: var(--r-normal); }
-.r-magic { color: var(--r-magic); }
-.r-rare { color: var(--r-rare); }
-.r-unique { color: var(--r-unique); }
-.r-gem { color: var(--r-gem); }
-.r-currency { color: var(--r-currency); }
-.r-card { color: var(--r-card); }
+.r-unique {
+  color: #af6025;
+}
