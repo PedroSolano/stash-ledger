@@ -94,7 +94,8 @@ When a snapshot finds a new item worth **1 divine or more**, a siren shows up in
 
 - Change the minimum value and its currency (**Chaos**, **Exalted** or **Divine Orb**, converted with the current poe.ninja price), turn the sound off or disable alerts in **Settings → Drop alerts**. **Test alert** shows what it looks like.
 - Alerts come from snapshots, so turn on **automatic snapshots** (every 5 minutes works well) to get them while you play.
-- For stacks, only what was added counts: going from 12 to 14 divines alerts for 2 divines.
+- For stacks, only what was added counts: going from 12 to 14 Mirror Shards alerts for 2.
+- Divine Orbs never trigger the siren. You picked them up yourself, so storing them isn't news.
 - No alert on your first snapshot of a league or for tabs you just started tracking.
 - It shows over the game in **windowed** or **windowed fullscreen** mode, not in exclusive fullscreen.
 

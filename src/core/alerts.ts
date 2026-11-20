@@ -2,6 +2,9 @@ import type { AlertCurrency, DropAlert, DropAlertItem, SnapshotDetail } from '..
 
 const MAX_ITEMS = 5
 
+/** Itens que nunca disparam a sirene, qualquer que seja o valor mínimo configurado. */
+const NEVER_ALERT = new Set(['Divine Orb'])
+
 /**
  * Itens caros que entraram na stash entre dois snapshots.
  *
@@ -9,6 +12,8 @@ const MAX_ITEMS = 5
  * - "Entrou" = grupo novo ou quantidade maior que no snapshot anterior (conta só o que aumentou).
  * - Itens de abas que não existiam no snapshot anterior são ignorados: começar a acompanhar uma
  *   aba nova não pode disparar a sirene para tudo que já estava lá.
+ * - Divine Orb nunca dispara: o app só vê a stash, então o "drop" aparece quando o jogador guarda
+ *   a divine que ele mesmo pegou; a sirene não acrescenta nada.
  */
 export function detectDrops(prev: SnapshotDetail | null, next: SnapshotDetail, thresholdChaos: number): DropAlertItem[] {
   if (!prev || prev.league !== next.league || !(thresholdChaos > 0)) return []
@@ -16,6 +21,7 @@ export function detectDrops(prev: SnapshotDetail | null, next: SnapshotDetail, t
   const knownTabs = new Set(prev.tabs.map((t) => t.name))
   const out: DropAlertItem[] = []
   for (const item of next.items) {
+    if (NEVER_ALERT.has(item.name)) continue
     if (!item.counted || item.unitChaos < thresholdChaos) continue
     if (!item.tabs.every((t) => knownTabs.has(t))) continue
     const gained = item.quantity - (prevQty.get(item.key) ?? 0)
@@ -31,11 +37,6 @@ export function detectDrops(prev: SnapshotDetail | null, next: SnapshotDetail, t
     })
   }
   return out.sort((a, b) => b.totalChaos - a.totalChaos).slice(0, MAX_ITEMS)
-}
-
-/** O alerta mostra o valor em divines: para a própria Divine Orb ("3 × Divine Orb = 3 div") é redundante. */
-export function valueIsObvious(item: Pick<DropAlertItem, 'name'>): boolean {
-  return item.name === 'Divine Orb'
 }
 
 /** Valor mínimo em chaos, pela cotação atual. null se a cotação da moeda não estiver disponível. */

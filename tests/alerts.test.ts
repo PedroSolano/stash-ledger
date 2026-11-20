@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PricedItem, SnapshotDetail } from '../src/shared/types'
-import { buildAlert, detectDrops, thresholdInChaos, valueIsObvious } from '../src/core/alerts'
+import { buildAlert, detectDrops, thresholdInChaos } from '../src/core/alerts'
 import { defaultSettings, sanitizeSettings } from '../src/core/settings'
 
 const DIV = 140
@@ -32,12 +32,12 @@ describe('detecção de drops caros', () => {
     expect(drops.map((d) => d.name)).toEqual(['Headhunter'])
   })
 
-  it('conta só o que aumentou numa pilha (divines: 12 → 14 avisa 2)', () => {
-    const prev = snap([item('Divine Orb', DIV, 12, ['Currency'])])
-    const next = snap([item('Divine Orb', DIV, 14, ['Currency'])])
+  it('conta só o que aumentou numa pilha (mirror shards: 12 → 14 avisa 2)', () => {
+    const prev = snap([item('Mirror Shard', 10 * DIV, 12, ['Currency'])])
+    const next = snap([item('Mirror Shard', 10 * DIV, 14, ['Currency'])])
     const [d] = detectDrops(prev, next, DIV)
     expect(d.quantity).toBe(2)
-    expect(d.totalChaos).toBe(2 * DIV)
+    expect(d.totalChaos).toBe(20 * DIV)
     expect(detectDrops(next, prev, DIV)).toEqual([])
   })
 
@@ -48,10 +48,12 @@ describe('detecção de drops caros', () => {
     expect(detectDrops(snap([], ['Dump']), next, DIV)).toEqual([])
   })
 
-  it('Divine Orb não repete o valor em divines', () => {
-    expect(valueIsObvious({ name: 'Divine Orb' })).toBe(true)
-    expect(valueIsObvious({ name: 'Mirror Shard' })).toBe(false)
-    expect(valueIsObvious({ name: 'Headhunter' })).toBe(false)
+  it('guardar Divine Orb nunca toca a sirene, mesmo com limite baixo', () => {
+    const prev = snap([item('Divine Orb', DIV, 12, ['Currency'])])
+    const next = snap([item('Divine Orb', DIV, 15, ['Currency']), item('Headhunter', 100 * DIV, 1)])
+    expect(detectDrops(prev, next, DIV).map((d) => d.name)).toEqual(['Headhunter'])
+    expect(detectDrops(prev, next, 50).map((d) => d.name)).toEqual(['Headhunter'])
+    expect(detectDrops(snap([]), snap([item('Divine Orb', DIV, 1, ['Currency'])]), 1)).toEqual([])
   })
 
   it('valor mínimo em qualquer moeda vira chaos pela cotação atual', () => {
