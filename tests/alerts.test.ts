@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PricedItem, SnapshotDetail } from '../src/shared/types'
-import { buildAlert, detectDrops, thresholdInChaos } from '../src/core/alerts'
+import { buildAlert, detectDrops, thresholdInChaos, valueIsObvious } from '../src/core/alerts'
 import { defaultSettings, sanitizeSettings } from '../src/core/settings'
 
 const DIV = 140
@@ -46,6 +46,12 @@ describe('detecção de drops caros', () => {
     expect(detectDrops(null, next, DIV)).toEqual([])
     expect(detectDrops(snap([], ['Dump'], 'Standard'), snap([item('X', 5 * DIV, 1)]), DIV)).toEqual([])
     expect(detectDrops(snap([], ['Dump']), next, DIV)).toEqual([])
+  })
+
+  it('Divine Orb não repete o valor em divines', () => {
+    expect(valueIsObvious({ name: 'Divine Orb' })).toBe(true)
+    expect(valueIsObvious({ name: 'Mirror Shard' })).toBe(false)
+    expect(valueIsObvious({ name: 'Headhunter' })).toBe(false)
   })
 
   it('valor mínimo em qualquer moeda vira chaos pela cotação atual', () => {

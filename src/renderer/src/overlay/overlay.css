@@ -108,6 +108,7 @@ body {
 }
 
 .detail[hidden],
+.value[hidden],
 .more[hidden] {
   display: none;
 }

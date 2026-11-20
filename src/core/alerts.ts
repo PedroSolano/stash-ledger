@@ -33,6 +33,11 @@ export function detectDrops(prev: SnapshotDetail | null, next: SnapshotDetail, t
   return out.sort((a, b) => b.totalChaos - a.totalChaos).slice(0, MAX_ITEMS)
 }
 
+/** O alerta mostra o valor em divines: para a própria Divine Orb ("3 × Divine Orb = 3 div") é redundante. */
+export function valueIsObvious(item: Pick<DropAlertItem, 'name'>): boolean {
+  return item.name === 'Divine Orb'
+}
+
 /** Valor mínimo em chaos, pela cotação atual. null se a cotação da moeda não estiver disponível. */
 export function thresholdInChaos(value: number, currency: AlertCurrency, rates: { divine: number; exalted?: number }): number | null {
   const rate = currency === 'chaos' ? 1 : currency === 'divine' ? rates.divine : rates.exalted

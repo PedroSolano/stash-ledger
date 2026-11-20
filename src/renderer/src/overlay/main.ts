@@ -6,6 +6,7 @@ import './overlay.css'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import type { DropAlert } from '../../../shared/types'
+import { valueIsObvious } from '../../../core/alerts'
 import { num, price, rarityClass } from '../lib/format'
 import { playSiren } from './siren'
 
@@ -36,7 +37,10 @@ function render(a: DropAlert): void {
   detail.hidden = !top.detail
 
   const each = top.quantity > 1 ? ` (${price(top.unitChaos, a.divineChaos)} each)` : ''
-  $('value').textContent = `${price(top.totalChaos, a.divineChaos)}${each}`
+  const value = $('value')
+  value.textContent = `${price(top.totalChaos, a.divineChaos)}${each}`
+  // Divine Orb: "1 div" não acrescenta nada ao nome.
+  value.hidden = valueIsObvious(top)
 
   const more = $('more')
   more.hidden = rest.length === 0
