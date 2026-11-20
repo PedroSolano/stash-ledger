@@ -100,11 +100,15 @@ fn cache_path(dir: &Path, league: &str) -> PathBuf {
     dir.join("prices").join(format!("{}.json.gz", slug(league)))
 }
 
+/// Versão do formato do cache. Mudou o formato compacto → cache antigo é descartado e baixado de novo.
+/// v2: linhas de câmbio levam o volume negociado (para marcar preços de pouca liquidez).
+const CACHE_V: u32 = 2;
+
 pub fn load(dir: &Path, league: &str) -> Cache {
     store::read_gz(&cache_path(dir, league))
         .and_then(|b| serde_json::from_slice::<Cache>(&b).ok())
-        .filter(|c| c.v == 1)
-        .unwrap_or_else(|| Cache { v: 1, league: league.to_string(), cats: BTreeMap::new() })
+        .filter(|c| c.v == CACHE_V)
+        .unwrap_or_else(|| Cache { v: CACHE_V, league: league.to_string(), cats: BTreeMap::new() })
 }
 
 fn save(dir: &Path, cache: &Cache) -> Result<(), String> {
@@ -168,7 +172,9 @@ pub fn compact(kind: &str, raw: &Value) -> Value {
                 if value <= 0.0 || s(m, "name").is_empty() {
                     continue;
                 }
-                l.push(json!([s(m, "name"), round_sig(value), s(m, "image")]));
+                // Volume negociado nas últimas 24 h, na moeda primária (chaos): dividido pelo preço dá
+                // quantas unidades trocaram de mão. Quase zero = preço de um negócio isolado.
+                l.push(json!([s(m, "name"), round_sig(value), s(m, "image"), round_sig(f(line, "volumePrimaryValue"))]));
             }
             if div <= 0.0 {
                 let rate = raw.pointer("/core/rates/divine").and_then(Value::as_f64).unwrap_or(0.0);
@@ -327,13 +333,18 @@ mod tests {
     fn compacts_exchange_with_divine() {
         let raw = json!({
             "core": { "rates": { "divine": 0.008786 } },
-            "lines": [{ "id": "divine", "primaryValue": 113.8123 }, { "id": "chaos", "primaryValue": 1 }, { "id": "x", "primaryValue": 0 }],
+            "lines": [
+                { "id": "divine", "primaryValue": 113.8123, "volumePrimaryValue": 2255695 },
+                { "id": "chaos", "primaryValue": 1 },
+                { "id": "x", "primaryValue": 0 }
+            ],
             "items": [{ "id": "divine", "name": "Divine Orb", "image": "/a.png" }, { "id": "chaos", "name": "Chaos Orb", "image": "/b.png" }, { "id": "x", "name": "X" }]
         });
         let c = compact("exchange", &raw);
         assert_eq!(c["k"], "e");
         assert_eq!(c["div"], json!(113.8));
-        assert_eq!(c["l"], json!([["Divine Orb", 113.8, "/a.png"], ["Chaos Orb", 1.0, "/b.png"]]));
+        // [nome, chaos, ícone, volume negociado em chaos (0 quando a API não informa)]
+        assert_eq!(c["l"], json!([["Divine Orb", 113.8, "/a.png", 2256000.0], ["Chaos Orb", 1.0, "/b.png", 0.0]]));
     }
 
     #[test]

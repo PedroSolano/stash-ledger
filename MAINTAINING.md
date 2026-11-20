@@ -89,6 +89,14 @@ The cache (`src-tauri/src/ninja.rs`) is refreshed on a schedule by the controlle
 | Bases (optional) | Uncorrupted normal/magic/rare ilvl 82+ items, by ilvl and influence |
 | Temples, scrying orbs | The most valuable room/area found in the mods |
 
+**Confidence** (`confidenceOf` in `src/core/pricing/priceItem.ts`, limits in `DEFAULT_PRICING`). Low-confidence prices stay out of totals and alerts unless the user opts in.
+- **Stash item categories:** fewer than 10 listings means low confidence (`lowConfidenceListings`).
+- **Exchange categories:** poe.ninja reports `volumePrimaryValue`, the chaos value traded in the last 24 h.
+  - `volume ÷ price` gives the units traded per day. Fewer than 5 means low confidence (`minTradedPerDay`).
+  - This catches a near-dead card whose "price" came from one odd trade. Example: The Survivalist read as 433c on 2.33c of volume.
+  - A missing or 0 volume counts as unknown and stays high confidence.
+  - The compact cache keeps the volume as the 4th element of exchange lines. Cache format `v` 2; older caches are discarded and fetched again.
+
 ## Drop alerts (siren overlay)
 
 - **Detection** (`src/core/alerts.ts`, called from `Controller.doSnapshot`): compares the new snapshot with the previous latest snapshot of the same league, item by item (`key`), and reports counted items whose unit price is at least the threshold (`alertThreshold` in `alertCurrency`: chaos, exalted or divine, converted with the snapshot's poe.ninja rates by `thresholdInChaos`; no alert if that currency has no rate) and whose quantity grew. Settings from before 0.7.3 (`alertThresholdDiv`) are read as divines. Only tabs that were already in the previous snapshot count, so adding a tab doesn't fire. At most 5 items per alert, sorted by value.

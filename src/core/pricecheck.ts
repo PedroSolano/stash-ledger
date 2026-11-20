@@ -1,7 +1,7 @@
 import type { PoeItem, PriceCheckResult } from '../shared/types'
 import { magicBaseCandidates, parseItemText } from './pricing/clipboard'
 import { norm, type PriceEntry, type PriceIndex } from './pricing/priceIndex'
-import { priceItem, type PriceMatch, type PricingOptions } from './pricing/priceItem'
+import { confidenceOf, priceItem, type PriceMatch, type PricingOptions } from './pricing/priceItem'
 
 /** Nome para mostrar: "Kaom's Heart" / "Divine Orb" / base do raro. */
 function displayName(item: PoeItem): string {
@@ -32,7 +32,7 @@ function uniqueCandidates(item: PoeItem, idx: PriceIndex, opts: PricingOptions):
     .map((e) => ({
       name: e.name,
       chaos: e.chaos,
-      confidence: e.listings < opts.lowConfidenceListings ? ('low' as const) : ('high' as const),
+      confidence: confidenceOf(e, opts),
       detail: e.variant,
       icon: e.icon
     }))

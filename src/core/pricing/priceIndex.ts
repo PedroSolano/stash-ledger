@@ -9,6 +9,8 @@ export interface PriceEntry {
   category: string
   /** Número de amostras/anúncios que sustentam o preço (stash). Infinity para câmbio. */
   listings: number
+  /** Câmbio: unidades negociadas nas últimas 24 h (volume ÷ preço). Ausente se a API não informou. */
+  tradedPerDay?: number
   baseType?: string
   variant?: string
   links?: number
@@ -120,11 +122,14 @@ export class PriceIndex {
       for (const line of data.lines) {
         const m = meta.get(line.id)
         if (!m?.name || !(line.primaryValue > 0)) continue
+        // Volume 0/ausente = a API não informou (não dá para julgar a liquidez).
+        const volume = line.volumePrimaryValue ?? 0
         const entry: PriceEntry = {
           name: m.name,
           chaos: line.primaryValue,
           category: type,
           listings: Number.POSITIVE_INFINITY,
+          tradedPerDay: volume > 0 ? volume / line.primaryValue : undefined,
           detailsId: m.detailsId,
           icon: m.image ? (m.image.startsWith('http') ? m.image : CDN + m.image) : undefined
         }

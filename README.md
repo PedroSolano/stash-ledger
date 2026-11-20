@@ -67,7 +67,7 @@ This mode uses a legacy website endpoint that isn't part of GGG's official API. 
 Markers in the item table:
 
 - **≈** Approximate price: poe.ninja had no exact match for that variant, so the app used the closest conservative one.
-- **low confidence**: fewer than 5 listings on poe.ninja. The item is shown but left out of your total, unless you enable *Include low-confidence prices in totals* in Settings.
+- **low confidence**: the price has little real trading behind it, so a single odd trade could set it. This means fewer than 10 listings on poe.ninja for items. For currency, cards, fragments and other exchange items, it means fewer than 5 units traded in the last 24 hours. The item is shown but left out of your total, unless you enable *Include low-confidence prices in totals* in Settings.
 - **No price**: poe.ninja doesn't price that item (most rares, for example).
 
 ### In game: overlay and hotkeys

@@ -308,3 +308,50 @@ describe('cache compacto (formato gravado pelo backend Rust)', () => {
     expect(priceItem(arc, ci)?.chaos).toBe(49)
   })
 })
+
+describe('confiança estrita (liquidez)', () => {
+  const card = (typeLine: string, stackSize = 1): PoeItem => base({ typeLine, frameType: 6, stackSize })
+  // Caso real: The Survivalist, carta de ~1c, apareceu a 433c com só 2,33c negociados em 24 h.
+  const liq = PriceIndex.fromCompact({
+    exchange_Currency: { k: 'e', div: 216, l: [['Divine Orb', 216, '', 2256000], ['Chaos Orb', 1, '', 0]] },
+    exchange_DivinationCard: {
+      k: 'e',
+      l: [
+        ['The Survivalist', 433, '', 2.33],
+        ['The Nurse', 200, '', 30000],
+        ['The Wretched', 2, '', 9],
+        ['Old Card', 50, '']
+      ]
+    },
+    item_UniqueArmour: {
+      k: 'i',
+      l: [
+        ['Thin Unique', 'Silk Robe', '', 0, 0, 0, 0, 0, -1, 80, 9, 0],
+        ['Solid Unique', 'Silk Robe', '', 0, 0, 0, 0, 0, -1, 80, 10, 0]
+      ]
+    }
+  } satisfies CompactPrices)
+
+  it('câmbio com quase nenhum negócio em 24 h é baixa confiança', () => {
+    expect(priceItem(card('The Survivalist'), liq)?.confidence).toBe('low')
+    // 9c ÷ 2c = 4,5 negociadas por dia: abaixo de 5.
+    expect(priceItem(card('The Wretched'), liq)?.confidence).toBe('low')
+  })
+  it('câmbio líquido continua alta confiança; sem volume informado também', () => {
+    expect(priceItem(card('The Nurse'), liq)?.confidence).toBe('high')
+    expect(priceItem(base({ typeLine: 'Divine Orb', frameType: 5 }), liq)?.confidence).toBe('high')
+    expect(priceItem(base({ typeLine: 'Chaos Orb', frameType: 5 }), liq)?.confidence).toBe('high')
+    expect(priceItem(card('Old Card'), liq)?.confidence).toBe('high')
+  })
+  it('itens de stash precisam de pelo menos 10 anúncios', () => {
+    const robe = (name: string) => base({ name, typeLine: 'Silk Robe', baseType: 'Silk Robe', frameType: 3 })
+    expect(priceItem(robe('Thin Unique'), liq)?.confidence).toBe('low')
+    expect(priceItem(robe('Solid Unique'), liq)?.confidence).toBe('high')
+  })
+  it('a carta sem liquidez fica fora do total da stash', () => {
+    const tabs = [{ tabId: 'd', tabName: 'Div Cards', items: [card('The Survivalist', 3), card('The Nurse')] }]
+    const r = valueItems(tabs, liq, { ...DEFAULT_PRICING, includeLowConfidence: false })
+    expect(r.totalChaos).toBe(200)
+    expect(r.items.find((i) => i.typeLine === 'The Survivalist')?.counted).toBe(false)
+  })
+})

@@ -3,8 +3,9 @@
 // (sem nomes de campo repetidos) e grava um único arquivo gzip por liga.
 // Referência da API: https://poe.ninja/docs/api
 
-/** Linha de câmbio: [nome, valor em chaos, caminho do ícone] */
-export type CompactExchangeLine = [string, number, string]
+/** Linha de câmbio: [nome, valor em chaos, caminho do ícone, volume negociado em 24 h (chaos)].
+ *  O volume falta em caches antigos (antes da versão 2 do cache). */
+export type CompactExchangeLine = [string, number, string, number?]
 
 /**
  * Linha de item de stash:
@@ -95,7 +96,7 @@ export function fromCompact(cats: CompactPrices): PriceIndexInput {
     if (cat.k === 'e') {
       // O índice reconhece o divine pelo id 'divine'; usar o valor direto evita erro de arredondamento.
       const id = (l: CompactExchangeLine, i: number): string => (l[0] === 'Divine Orb' && type === 'Currency' ? 'divine' : String(i))
-      const lines = cat.l.map((l, i) => ({ id: id(l, i), primaryValue: l[1] }))
+      const lines: ExchangeResponse['lines'] = cat.l.map((l, i) => ({ id: id(l, i), primaryValue: l[1], volumePrimaryValue: l[3] }))
       if (type === 'Currency' && cat.div && cat.div > 0 && !lines.some((l) => l.id === 'divine')) {
         lines.push({ id: 'divine', primaryValue: cat.div })
       }

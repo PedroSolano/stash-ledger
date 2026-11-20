@@ -6,9 +6,12 @@ export interface PricingOptions {
   priceBaseTypes: boolean
   /** Abaixo desse número de amostras o preço de stash é marcado como baixa confiança. */
   lowConfidenceListings: number
+  /** Câmbio (moedas, cartas, fragmentos…): abaixo dessas unidades negociadas por dia, baixa confiança. */
+  minTradedPerDay: number
 }
 
-export const DEFAULT_PRICING: PricingOptions = { priceBaseTypes: true, lowConfidenceListings: 5 }
+/** Limites "estritos": um preço só entra no total com liquidez real por trás. */
+export const DEFAULT_PRICING: PricingOptions = { priceBaseTypes: true, lowConfidenceListings: 10, minTradedPerDay: 5 }
 
 export interface PriceMatch {
   chaos: number
@@ -86,7 +89,10 @@ function isMap(item: PoeItem): boolean {
 
 /* ---------- Seleção entre candidatos ---------- */
 
-function confidenceOf(e: PriceEntry, opts: PricingOptions): Confidence {
+export function confidenceOf(e: PriceEntry, opts: PricingOptions): Confidence {
+  // Câmbio: o preço vem dos negócios fechados; com quase nenhum negócio, um único valor fora da
+  // curva vira "o preço" (ex.: uma carta de 1c que alguém trocou por 2 div).
+  if (e.tradedPerDay !== undefined) return e.tradedPerDay < opts.minTradedPerDay ? 'low' : 'high'
   return e.listings < opts.lowConfidenceListings ? 'low' : 'high'
 }
 

@@ -274,7 +274,7 @@ export function SettingsModal({ state, update, layoutPref, detectedLayout, onLay
             />
             <span>
               Include low-confidence prices in totals
-              <div className="sub">Items with fewer than 5 listings on poe.ninja show in the table but are left out of the total.</div>
+              <div className="sub">Items with fewer than 10 listings on poe.ninja, and exchange items (cards, currency…) with fewer than 5 traded in the last 24 h, show in the table but are left out of the total.</div>
             </span>
           </label>
           <div className="field">
