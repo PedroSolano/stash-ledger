@@ -39,6 +39,7 @@ export const pauseHotkeys = (paused: boolean): Promise<void> => call('hotkeys_pa
 export const hideWindow = (): Promise<void> => call('main_hide')
 export const quitApp = (): Promise<void> => call('app_quit')
 export const showPriceCheck = (result: PriceCheckPayload): Promise<void> => call('pricecheck_show', { result })
+export const preparePriceCheck = (): Promise<void> => call('pricecheck_prepare')
 
 export const openExternal = (url: string): Promise<void> => call('open_external', { url })
 export const openLog = (): Promise<void> => call('open_log')

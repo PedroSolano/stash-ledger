@@ -11,7 +11,7 @@ import type {
   WindowVisibility
 } from '../../../shared/types'
 import { Controller } from '../../../core/controller'
-import { hideWindow, openExternal, openLog, pauseHotkeys, quitApp, showPriceCheck, tauriPlatform } from './platform'
+import { hideWindow, openExternal, openLog, pauseHotkeys, preparePriceCheck, quitApp, showPriceCheck, tauriPlatform } from './platform'
 
 // Monta a window.api usada pelos componentes: controller (TS) + backend Rust + updater do Tauri.
 
@@ -62,6 +62,13 @@ void listen<{ text: string }>('price-check', (e) => {
     .then((ninja) => showPriceCheck({ text: e.payload.text, ninja, league: controller.league() }))
     .catch(() => undefined)
 })
+// Deixa o price check pronto logo depois de abrir (índice de preços em memória e a janela do
+// price check criada escondida, com os dados de mods carregados): o primeiro Alt+D já é instantâneo.
+// Espera um pouco para não disputar CPU com a abertura do app e do jogo.
+void ready
+  .then(() => new Promise((r) => setTimeout(r, 3000)))
+  .then(() => (controller.warmPriceCheck() ? preparePriceCheck() : undefined))
+  .catch(() => undefined)
 // "Quit" na bandeja: fecha de vez, instalando antes a atualização que estiver pronta.
 void listen('quit-requested', () => void quit())
 

@@ -4,7 +4,8 @@
 //! - Fecha ao clicar fora dela (o clique segue para o jogo), com Esc (no jogo ou na janela), quando
 //!   outro programa vai para a frente, ou quando um novo price check a substitui.
 //! - O tamanho acompanha o conteúdo (a página informa com `pricecheck_resize`).
-//! - Criada no primeiro price check e depois só escondida, para os próximos aparecerem na hora.
+//! - Criada escondida logo depois que o app abre (`pricecheck_prepare`), com os dados de mods já
+//!   carregados, e depois só escondida: o atalho nunca espera o WebView2 subir.
 
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -20,8 +21,9 @@ const HEIGHT: f64 = 260.0;
 /// Margem entre o cursor e a janela.
 const GAP: i32 = 24;
 
-/// Resultado aguardando a janela terminar de carregar (só no primeiro uso).
-static PENDING: Mutex<Option<Value>> = Mutex::new(None);
+/// Página carregada (já chamou `pricecheck_ready`) e resultado aguardando ela terminar de carregar.
+/// Juntos no mesmo lock: um resultado nunca se perde entre a página ficar pronta e o evento sair.
+static PAGE: Mutex<(bool, Option<Value>)> = Mutex::new((false, None));
 /// Cursor e janela do jogo no momento do atalho.
 static ORIGIN: Mutex<(i32, i32, isize)> = Mutex::new((0, 0, 0));
 /// Cada price check (e cada "esconder") invalida o anterior: um resultado atrasado nunca reaparece.
@@ -89,41 +91,64 @@ fn watch_foreground(app: &AppHandle, gen: u64) {
     });
 }
 
+fn create(app: &AppHandle) -> Result<WebviewWindow, String> {
+    tauri::WebviewWindowBuilder::new(app, LABEL, tauri::WebviewUrl::App("pricecheck.html".into()))
+        .title("Exile's Companion price check")
+        .inner_size(WIDTH, HEIGHT)
+        .decorations(false)
+        .transparent(true)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .resizable(false)
+        .focused(false)
+        .shadow(false)
+        .visible(false)
+        .additional_browser_args(crate::BROWSER_ARGS)
+        .build()
+        .map_err(|e| e.to_string())
+}
+
+/// Cria a janela escondida com antecedência (chamado pela interface logo depois de abrir).
+#[tauri::command]
+pub async fn pricecheck_prepare(app: AppHandle) -> Result<(), String> {
+    if app.get_webview_window(LABEL).is_none() {
+        create(&app)?;
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn pricecheck_show(app: AppHandle, result: Value) -> Result<(), String> {
     SHOWING.store(GEN.fetch_add(1, Ordering::SeqCst) + 1, Ordering::SeqCst);
     crate::hotkeys::watch_popup(None);
-    if let Some(w) = app.get_webview_window(LABEL) {
+    let window = app.get_webview_window(LABEL);
+    if let Some(w) = &window {
         // Some o resultado anterior enquanto o novo é desenhado.
-        crate::hide_raw(&w);
-        // A página desenha e chama `pricecheck_visible`, que mostra a janela.
-        app.emit_to(LABEL, "price", result).map_err(|e| e.to_string())?;
-    } else {
-        *PENDING.lock().unwrap() = Some(result);
-        let w = tauri::WebviewWindowBuilder::new(&app, LABEL, tauri::WebviewUrl::App("pricecheck.html".into()))
-            .title("Exile's Companion price check")
-            .inner_size(WIDTH, HEIGHT)
-            .decorations(false)
-            .transparent(true)
-            .always_on_top(true)
-            .skip_taskbar(true)
-            .resizable(false)
-            .focused(false)
-            .shadow(false)
-            .visible(false)
-            .additional_browser_args(crate::BROWSER_ARGS)
-            .build()
-            .map_err(|e| e.to_string())?;
+        crate::hide_raw(w);
+    }
+    {
+        let mut page = PAGE.lock().unwrap();
+        if page.0 {
+            // A página desenha e chama `pricecheck_visible`, que mostra a janela.
+            return app.emit_to(LABEL, "price", result).map_err(|e| e.to_string());
+        }
+        // Ainda carregando: a página pega o resultado em `pricecheck_ready`.
+        page.1 = Some(result);
+    }
+    if window.is_none() {
+        let w = create(&app)?;
         place(&w);
         crate::hotkeys::watch_popup(None);
     }
     Ok(())
 }
 
-/// A página terminou de carregar: entrega o resultado pendente (primeiro uso).
+/// A página terminou de carregar: entrega o resultado pendente, se houver.
 #[tauri::command]
 pub fn pricecheck_ready() -> Option<Value> {
-    PENDING.lock().unwrap().take()
+    let mut page = PAGE.lock().unwrap();
+    page.0 = true;
+    page.1.take()
 }
 
 /// A página desenhou o resultado: mostra a janela sem tirar o foco do jogo. Se outro price check

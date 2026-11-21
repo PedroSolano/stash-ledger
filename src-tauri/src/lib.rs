@@ -794,6 +794,7 @@ pub fn run() {
             app_quit,
             pricewin::pricecheck_show,
             pricewin::pricecheck_ready,
+            pricewin::pricecheck_prepare,
             pricewin::pricecheck_visible,
             pricewin::pricecheck_hide,
             pricewin::pricecheck_resize,

@@ -274,10 +274,7 @@ export class Controller {
    */
   private async ensurePrices(league: string): Promise<{ index: PriceIndex; updatedAt: number | null }> {
     let status = await this.p.ninjaStatus(league)
-    const maxAge = Math.max(2 * this.settings.priceRefreshMinutes, 60) * 60_000
-    if (!status.updatedAt || Date.now() - status.updatedAt > maxAge || status.categories === 0) {
-      status = await this.p.ninjaRefresh(league, false)
-    }
+    if (this.pricesStale(status)) status = await this.p.ninjaRefresh(league, false)
     const cats = await this.p.ninjaPrices(league)
     if (!cats) throw new Error('Could not load poe.ninja prices for this league.')
     const index = PriceIndex.fromCompact(cats)
@@ -285,14 +282,21 @@ export class Controller {
     return { index, updatedAt: status.updatedAt }
   }
 
+  private pricesStale(status: NinjaStatus): boolean {
+    const maxAge = Math.max(2 * this.settings.priceRefreshMinutes, 60) * 60_000
+    return !status.updatedAt || Date.now() - status.updatedAt > maxAge || status.categories === 0
+  }
+
   /* ---------- price check (atalho sobre um item no jogo) ---------- */
 
   /**
-   * Índice de preços mantido em memória entre um price check e outro (montá-lo leva alguns
-   * décimos de segundo). É refeito quando o cache do poe.ninja muda e liberado após um tempo sem uso.
+   * Índice de preços do price check, mantido em memória enquanto o app roda (o app só fica aberto
+   * junto com o jogo). O atalho nunca espera a rede: usa o cache local, mesmo velho, e o
+   * atualiza em segundo plano; o índice é trocado quando o cache novo chega.
    */
   private checkCache: { league: string; updatedAt: number | null; index: PriceIndex } | null = null
-  private checkTimer: ReturnType<typeof setTimeout> | null = null
+  private checkLoading: { league: string; promise: Promise<NonNullable<Controller['checkCache']>> } | null = null
+  private checkRefreshing = false
 
   league(): string | null {
     return this.settings.league
@@ -303,19 +307,73 @@ export class Controller {
     if (!league) {
       return { ok: false, name: 'No league selected', frameType: 0, quantity: 1, divineChaos: 0, message: "Open Exile's Companion and pick your league first." }
     }
-    let cache = this.checkCache
-    if (cache && cache.league === league) {
-      const status = await this.p.ninjaStatus(league).catch(() => null)
-      if (status && status.updatedAt !== cache.updatedAt) cache = null
-    } else cache = null
-    if (!cache) {
-      const { index, updatedAt } = await this.ensurePrices(league)
-      cache = { league, updatedAt, index }
-      this.checkCache = cache
-    }
-    if (this.checkTimer) clearTimeout(this.checkTimer)
-    this.checkTimer = setTimeout(() => (this.checkCache = null), 15 * 60_000)
+    const cache = await this.checkIndex(league)
     return checkPrice(text, cache.index, { ...DEFAULT_PRICING, priceBaseTypes: this.settings.priceBaseTypes }, cache)
+  }
+
+  /**
+   * Deixa o price check pronto logo que o app abre, para o primeiro atalho já ser instantâneo.
+   * Devolve se o price check está ligado (para a interface também preparar a janela dele).
+   */
+  warmPriceCheck(): boolean {
+    const s = this.settings
+    if (!s.hotkeysEnabled || !s.priceCheckKey) return false
+    if (s.league) this.checkIndex(s.league).catch((err: Error) => void this.p.logError('prices', err.message))
+    return true
+  }
+
+  private checkIndex(league: string): Promise<NonNullable<Controller['checkCache']>> {
+    const cached = this.checkCache
+    if (cached && cached.league === league) return Promise.resolve(cached)
+    if (this.checkLoading?.league !== league) {
+      const promise = this.buildCheckIndex(league)
+        .then((c) => {
+          if (this.settings.league === league) this.checkCache = c
+          return c
+        })
+        .finally(() => {
+          if (this.checkLoading?.promise === promise) this.checkLoading = null
+        })
+      this.checkLoading = { league, promise }
+    }
+    return this.checkLoading!.promise
+  }
+
+  /** Índice a partir do cache em disco; a rede só é esperada se não houver cache nenhum. */
+  private async buildCheckIndex(league: string): Promise<NonNullable<Controller['checkCache']>> {
+    const status = await this.p.ninjaStatus(league)
+    const cats = status.categories > 0 ? await this.p.ninjaPrices(league) : null
+    const index = cats ? PriceIndex.fromCompact(cats) : null
+    if (!index?.size) {
+      const fresh = await this.ensurePrices(league)
+      return { league, ...fresh }
+    }
+    if (this.pricesStale(status)) void this.refreshCheckPrices(league)
+    return { league, updatedAt: status.updatedAt, index }
+  }
+
+  /** Atualiza o cache do poe.ninja em segundo plano e troca o índice do price check. */
+  private async refreshCheckPrices(league: string): Promise<void> {
+    if (this.checkRefreshing) return
+    this.checkRefreshing = true
+    try {
+      const status = await this.p.ninjaRefresh(league, false)
+      await this.swapCheckIndex(league, status.updatedAt)
+    } catch (err) {
+      void this.p.logError('prices', (err as Error).message)
+    } finally {
+      this.checkRefreshing = false
+    }
+  }
+
+  private async swapCheckIndex(league: string, updatedAt: number | null, index?: PriceIndex): Promise<void> {
+    const cur = this.checkCache
+    if (!cur || cur.league !== league || cur.updatedAt === updatedAt) return
+    if (!index) {
+      const cats = await this.p.ninjaPrices(league)
+      index = cats ? PriceIndex.fromCompact(cats) : undefined
+    }
+    if (index?.size && this.checkCache === cur) this.checkCache = { league, updatedAt, index }
   }
 
   /* ---------- snapshots ---------- */
@@ -383,6 +441,8 @@ export class Controller {
     if (!selected.length) throw new Error('Select at least one stash tab.')
 
     const { index, updatedAt } = await this.ensurePrices(league)
+    // O snapshot pode ter trazido preços novos: o price check passa a usar o mesmo índice.
+    void this.swapCheckIndex(league, updatedAt, index)
 
     // No modo sessão o backend acessa as abas pela posição, que muda se você reordenar no jogo:
     // relista a cada snapshot (1 requisição) para não ler a aba errada.
@@ -466,24 +526,27 @@ export class Controller {
   /* ---------- agendamento ---------- */
 
   /**
-   * Dois relógios, ambos só com sessão ativa: atualização do cache de preços (requisições
-   * condicionais; quase sempre respostas 304 vazias) e snapshot automático, se ligado.
+   * Dois relógios: atualização do cache de preços (requisições condicionais; quase sempre
+   * respostas 304 vazias), com sessão ativa ou com o price check ligado (que não precisa da
+   * sessão da GGG), e snapshot automático, só com sessão ativa.
    */
   private schedule(): void {
     if (this.snapshotTimer) clearInterval(this.snapshotTimer)
     if (this.priceTimer) clearInterval(this.priceTimer)
     this.snapshotTimer = null
     this.priceTimer = null
-    if (!this.active()) return
 
     this.priceTimer = setInterval(
       () => {
-        const league = this.settings.league
-        if (!this.active() || !league || this.running) return
-        this.p.ninjaRefresh(league, false).catch((err: Error) => void this.p.logError('prices', err.message))
+        const s = this.settings
+        const wanted = this.active() || (s.hotkeysEnabled && !!s.priceCheckKey)
+        if (!wanted || !s.league || this.running) return
+        void this.refreshCheckPrices(s.league)
       },
       Math.max(15, this.settings.priceRefreshMinutes) * 60_000
     )
+
+    if (!this.active()) return
 
     const minutes = this.settings.autoSnapshotMinutes
     if (minutes) {

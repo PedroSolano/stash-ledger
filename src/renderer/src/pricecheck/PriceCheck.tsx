@@ -500,9 +500,11 @@ export function PriceCheck(props: { dataReady: Promise<void>; register: (fn: (p:
           <div className="cands">
             {candidates.map((u) => {
               const n = ninja.candidates?.find((c) => c.name === u.name)
+              const icon = u.icon || n?.icon
               return (
                 <button type="button" key={u.refName} className="cand" onClick={() => identify(u)}>
-                  <span className="r-unique">{u.name}</span>
+                  {icon ? <img className="cand-icon" src={icon} alt="" loading="eager" /> : <span className="cand-icon none" />}
+                  <span className="r-unique cand-name">{u.name}</span>
                   <span className="cand-price">{n ? price(n.chaos, div) : ''}</span>
                 </button>
               )
