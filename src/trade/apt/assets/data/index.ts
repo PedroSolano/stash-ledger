@@ -92,12 +92,30 @@ export function loadItems(ndjson: string): void {
   REPLICA_UNIQUE_NAMES = itemNamesFromLines(ITEMS_ITERATOR('refName":"Replica'))
 }
 
+/**
+ * Exile's Companion: texto de mod sem as dicas entre parênteses do formato avançado, em minúsculas.
+ * "Raised Spectres (Animated Weapons-Holy Armaments) is Doubled" e o "Raised Spectres(...) is Doubled"
+ * que o jogo copia quando abrevia viram ambos "raised spectres is doubled". Só some parêntese com
+ * letras ou "..."; faixas de roll ("(12-16)") ficam.
+ */
+export function hintless(s: string): string {
+  return s
+    .replace(/\s*\((?:\.\.\.|…|[^()]*[A-Za-z][^()]*)\)/g, '')
+    .replace(/[ \t]+/g, ' ')
+    .toLowerCase()
+}
+
+const AMBIGUOUS = -1
+
 export function loadStats(ndjson: string): void {
   const byRef = new Map<string, number>()
   const byMatcher = new Map<string, number>()
   // Stash Ledger: palavras-chave do jogo vêm com maiúscula no texto copiado ("deal damage 6% Faster")
   // e minúscula nos dados ("faster"); se a busca exata falhar, tenta sem diferenciar maiúsculas.
   const byMatcherLower = new Map<string, number>()
+  // Último recurso: sem as dicas entre parênteses (ver `hintless`). Textos que viram o mesmo em
+  // registros diferentes ficam marcados como ambíguos e nunca casam por aqui.
+  const byMatcherHintless = new Map<string, number>()
   scanLines(ndjson, (r, start) => {
     const sg = r as StatOrGroup
     const stats = 'stats' in sg ? sg.stats : [sg]
@@ -108,6 +126,10 @@ export function loadStats(ndjson: string): void {
           if (!byMatcher.has(str)) byMatcher.set(str, start)
           const lower = str.toLowerCase()
           if (!byMatcherLower.has(lower)) byMatcherLower.set(lower, start)
+          const loose = hintless(str)
+          const prev = byMatcherHintless.get(loose)
+          if (prev === undefined) byMatcherHintless.set(loose, start)
+          else if (prev !== start) byMatcherHintless.set(loose, AMBIGUOUS)
         }
       }
     }
@@ -118,22 +140,31 @@ export function loadStats(ndjson: string): void {
     return start === undefined ? undefined : lineAt<StatOrGroup>(ndjson, start)
   }
 
+  /**
+   * Registro recém-lido (cópia própria) achado por uma busca aproximada: os matchers equivalentes
+   * passam a ter o texto exato do item, para o código adiante, que compara com igualdade exata,
+   * reconhecê-lo.
+   */
+  function adoptText(start: number, matchStr: string, same: (s: string) => string): StatOrGroup {
+    const sg = lineAt<StatOrGroup>(ndjson, start)
+    const key = same(matchStr)
+    for (const s of 'stats' in sg ? sg.stats : [sg]) {
+      for (const m of s.matchers) {
+        if (same(m.string) === key) m.string = matchStr
+        if (m.advanced && same(m.advanced) === key) m.advanced = matchStr
+      }
+    }
+    return sg
+  }
+
   STAT_BY_MATCH_STR_V2 = function (matchStr: string) {
     const start = byMatcher.get(matchStr)
     if (start !== undefined) return lineAt<StatOrGroup>(ndjson, start)
     const lowerStart = byMatcherLower.get(matchStr.toLowerCase())
-    if (lowerStart === undefined) return undefined
-    // Registro recém-lido (cópia própria): ajusta o texto do matcher para o código adiante, que
-    // compara com igualdade exata, reconhecer este texto.
-    const sg = lineAt<StatOrGroup>(ndjson, lowerStart)
-    const lower = matchStr.toLowerCase()
-    for (const s of 'stats' in sg ? sg.stats : [sg]) {
-      for (const m of s.matchers) {
-        if (m.string.toLowerCase() === lower) m.string = matchStr
-        if (m.advanced?.toLowerCase() === lower) m.advanced = matchStr
-      }
-    }
-    return sg
+    if (lowerStart !== undefined) return adoptText(lowerStart, matchStr, (s) => s.toLowerCase())
+    const looseStart = byMatcherHintless.get(hintless(matchStr))
+    if (looseStart !== undefined && looseStart !== AMBIGUOUS) return adoptText(looseStart, matchStr, hintless)
+    return undefined
   }
 
   STAT_BY_MATCH_STR = function (matchStr: string) {

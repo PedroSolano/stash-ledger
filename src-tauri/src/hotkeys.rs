@@ -568,14 +568,26 @@ mod platform {
         ok
     }
 
-    /// Ctrl+C sobre o item sob o cursor: o jogo põe a descrição do item na área de transferência.
+    /// Ctrl+Alt+C sobre o item sob o cursor: o jogo põe a descrição do item na área de transferência.
     /// Devolve esse texto e restaura o conteúdo anterior.
     unsafe fn copy_item() -> Option<String> {
         release_modifiers();
         let saved = clipboard_text();
         let before = GetClipboardSequenceNumber();
         std::thread::sleep(Duration::from_millis(20));
-        send(&[key(VK_CONTROL, false, false), key(0x43, false, false), key(0x43, true, false), key(VK_CONTROL, true, false)]);
+        // Ctrl+Alt+C, não Ctrl+C: desde a 3.29 o Ctrl+C já copia o formato avançado, mas abrevia as
+        // dicas longas ("Raised Spectres(...)"), que aí não batem com os dados de mods. Com Alt o
+        // jogo copia a descrição completa ("Raised Spectres (Animated Weapons-Holy Armaments)").
+        // O Awakened chega ao mesmo resultado sem querer: ele não solta o Alt do Alt+D.
+        // O C entre o Alt descendo e subindo impede o Alt de abrir o menu da janela.
+        send(&[
+            key(VK_CONTROL, false, false),
+            key(VK_LMENU, false, false),
+            key(0x43, false, false),
+            key(0x43, true, false),
+            key(VK_LMENU, true, false),
+            key(VK_CONTROL, true, false),
+        ]);
         let start = Instant::now();
         let mut text = None;
         while start.elapsed() < Duration::from_millis(800) {
