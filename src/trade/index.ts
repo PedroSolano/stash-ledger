@@ -53,8 +53,13 @@ export function cleanKeywordMarkup(text: string): string {
   return text.replace(/\[([^\]|\n]+)\|([^\]\n]+)\]/g, '$2').replace(/\[([^\]|\n]+)\]/g, '$1')
 }
 
-/** Mods que o parser não reconheceu (mostrados na janela como "não pesquisáveis"). */
+/**
+ * Mods que o parser não reconheceu (mostrados na janela como "não pesquisáveis").
+ * Como o Awakened (FiltersBlock.vue): nada para mapas e sentinels. Mapas são pesquisados por base,
+ * tier e estado de blight, não pelos mods; os de mapas blighted nem existem como filtro.
+ */
 export function unknownMods(item: ParsedItem): Array<{ text: string; type: string }> {
+  if (item.category === ItemCategory.Map || item.category === ItemCategory.Sentinel) return []
   return item.unknownModifiers.map((m) => ({ text: m.text, type: String(m.type) }))
 }
 

@@ -77,6 +77,44 @@ describe('dados de mods: todo texto acha o seu registro', () => {
   })
 })
 
+describe('mapas blighted (como o Awakened)', () => {
+  const map = [
+    'Item Class: Maps',
+    'Rarity: Rare',
+    'Rotting Haven',
+    'Blight-ravaged Map (Tier 16)',
+    '--------',
+    'Map Area: Jungle Valley',
+    'Item Quantity: +70% (augmented)',
+    '--------',
+    'Item Level: 84',
+    '--------',
+    '{ Implicit Modifier }',
+    'Area is infested with Fungal Growths',
+    'Natural inhabitants of this area have been removed — Unscalable Value',
+    'Can be Anointed up to 3 times — Unscalable Value',
+    'Can have 3 additional Enchantment Modifiers',
+    '--------',
+    '{ Prefix Modifier "Lucky" }',
+    'Varieties of Items contained in 12 Blight Chests are Lucky',
+    '{ Suffix Modifier "Fortified" }',
+    'Towers deal 25% more Damage',
+    '--------',
+    'Travel to this Map by using it in a personal Map Device. Maps can only be used once.'
+  ].join('\n')
+
+  it('pesquisa por base, área e tier; os mods não aparecem como "not searchable"', () => {
+    const r = prepareCheck(map, { league: 'Standard' })
+    if ('error' in r) throw new Error(r.error)
+    expect(unknownMods(r.item)).toEqual([])
+    const f = r.presets[0].filters
+    expect(f.mapBlighted?.value).toBe('Blight-ravaged')
+    expect(f.mapTier?.value).toBe(16)
+    expect(f.searchExact.sub?.baseType).toBe('Jungle Valley')
+    expect(f.searchExact.sub?.disabled).toBe(false)
+  })
+})
+
 describe('item real com dica abreviada', () => {
   const unique = (spectreLines: string[]) =>
     [

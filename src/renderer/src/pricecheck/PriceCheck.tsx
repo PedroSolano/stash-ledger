@@ -199,6 +199,23 @@ function ItemChips({ f, item, onChange }: { f: ItemFilters; item: ParsedItem; on
       </Chip>
     )
   }
+  // Filtro secundário da pesquisa ativa (área de um mapa blighted, por exemplo), como o Awakened.
+  const active = f.searchRelaxed && !f.searchRelaxed.disabled ? f.searchRelaxed : f.searchExact
+  const sub = active.sub
+  if (sub) {
+    chips.push(
+      <Chip key="sub" on={!sub.disabled} onClick={toggle(sub)}>
+        {sub.name ?? sub.baseType}
+      </Chip>
+    )
+  }
+  if (f.mapCompletionReward) {
+    chips.push(
+      <Chip key="reward" on title="Map completion reward (always searched)">
+        Reward: {f.mapCompletionReward.name}
+      </Chip>
+    )
+  }
   if (f.rarity) {
     chips.push(
       <Chip key="rarity" on={!f.rarity.disabled} onClick={toggle(f.rarity)}>
@@ -254,10 +271,32 @@ function ItemChips({ f, item, onChange }: { f: ItemFilters; item: ParsedItem; on
       </Chip>
     )
   }
+  if (f.veiled) {
+    chips.push(
+      <Chip key="veiled" on={!f.veiled.disabled} onClick={toggle(f.veiled)}>
+        Veiled
+      </Chip>
+    )
+  }
+  if (f.foil) {
+    chips.push(
+      <Chip key="foil" on={!f.foil.disabled} onClick={toggle(f.foil)}>
+        Foil unique
+      </Chip>
+    )
+  }
+  // Como o Awakened: sempre ativos, o clique alterna entre "é" e "não é".
   if (f.mirrored && !f.mirrored.hidden) {
     chips.push(
-      <Chip key="mirror" on={!f.mirrored.disabled} onClick={toggle(f.mirrored)}>
-        Mirrored
+      <Chip key="mirror" on onClick={toggle(f.mirrored)}>
+        {f.mirrored.disabled ? 'Not mirrored' : 'Mirrored'}
+      </Chip>
+    )
+  }
+  if (f.split && !f.split.hidden) {
+    chips.push(
+      <Chip key="split" on onClick={toggle(f.split)}>
+        {f.split.disabled ? 'Not split' : 'Split'}
       </Chip>
     )
   }

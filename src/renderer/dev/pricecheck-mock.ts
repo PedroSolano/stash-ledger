@@ -61,6 +61,32 @@ const ITEMS: Record<string, PriceCheckPayload> = {
       message: 'Unidentified: one of 3 uniques on this base.'
     }
   },
+  map: {
+    league: 'Keepers',
+    text: lines(
+      'Item Class: Maps',
+      'Rarity: Rare',
+      'Rotting Haven',
+      'Blight-ravaged Map (Tier 16)',
+      '--------',
+      'Map Area: Jungle Valley',
+      'Item Quantity: +70% (augmented)',
+      '--------',
+      'Item Level: 84',
+      '--------',
+      '{ Implicit Modifier }',
+      'Area is infested with Fungal Growths',
+      'Natural inhabitants of this area have been removed — Unscalable Value',
+      'Can be Anointed up to 3 times — Unscalable Value',
+      'Can have 3 additional Enchantment Modifiers',
+      '--------',
+      '{ Prefix Modifier "Lucky" }',
+      'Varieties of Items contained in 12 Blight Chests are Lucky',
+      '{ Suffix Modifier "Fortified" }',
+      'Towers deal 25% more Damage'
+    ),
+    ninja: { ok: true, name: 'Rotting Haven', base: 'Blight-ravaged Map (Tier 16)', frameType: 2, quantity: 1, divineChaos: 150, message: 'poe.ninja has no price for this item.' }
+  },
   divine: {
     league: 'Keepers',
     text: lines('Item Class: Stackable Currency', 'Rarity: Currency', 'Divine Orb', '--------', 'Stack Size: 7/20'),
